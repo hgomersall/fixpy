@@ -11,15 +11,15 @@ class FixedPointArray(object):
     __array_priority__ = 1.0
 
     def __init__(self, data, fractional_bits, data_already_scaled=False):
-        '''A ``FixedPointArray`` is created from the data provided in the 
+        '''A ``FixedPointArray`` is created from the data provided in the
         first argument, with the number of bits allocated to the fractional
-        part of the array dictated by ``fractional_bits``. 
-        
-        By default, the array should be one that needs to be scaled to build 
+        part of the array dictated by ``fractional_bits``.
+
+        By default, the array should be one that needs to be scaled to build
         the correct internal representation of the data. This can be
         disabled with the ``data_already_scaled`` flag, in which case it is
         assumed that the data passed in has the correct scaling already. This
-        is largely useful for constructing arrays from data that has been 
+        is largely useful for constructing arrays from data that has been
         extracted from a pre-existing FixedPointArray and we want to put it
         back into one (it is used extensively inside the class).
 
@@ -36,7 +36,7 @@ class FixedPointArray(object):
             if fractional_bits != data.fractional_bits:
                 scaling_fractional_bits = (
                     fractional_bits - data.fractional_bits)
-                
+
                 data = f_round(data.data.copy() * 2**scaling_fractional_bits)
             else:
                 data = data.data
@@ -49,7 +49,7 @@ class FixedPointArray(object):
         else:
             is_complex = np.iscomplexobj(data.data)
 
-        
+
         if is_complex:
             storage_type = 'complex128'
         else:
@@ -73,7 +73,7 @@ class FixedPointArray(object):
 
         self.fractional_bits = fractional_bits
         self.storage_type = storage_type
-        
+
     @property
     def max_integer_bits(self):
         '''Returns the maximum number of bits needed to encode the integer
@@ -128,7 +128,7 @@ class FixedPointArray(object):
     def __getitem__(self, _slice):
 
         sliced_data = self.data[_slice]
-        return self.__class__(sliced_data, 
+        return self.__class__(sliced_data,
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -156,8 +156,8 @@ class FixedPointArray(object):
         return self.data.__len__()
 
     def __mul__(self, other):
-        '''Point-wise multiply the elements. The number of fractional bits 
-        used for the output is the maximum of the fractional bits of the two 
+        '''Point-wise multiply the elements. The number of fractional bits
+        used for the output is the maximum of the fractional bits of the two
         inputs.
         '''
         if not isinstance(other, type(self)):
@@ -170,15 +170,15 @@ class FixedPointArray(object):
         # other. This is so we have the fractional bits of the solution
         # the same as this self.
         post_scaling = 2**-scaling_bits
-        
+
         if sparse.issparse(self.data):
-            result = f_round(self.data.multiply(other.data) * 
+            result = f_round(self.data.multiply(other.data) *
                              np.float64(post_scaling))
         else:
-            result = f_round(self.data * other.data * 
+            result = f_round(self.data * other.data *
                              np.float64(post_scaling))
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=output_frac_bits,
                 data_already_scaled=True)
 
@@ -190,7 +190,7 @@ class FixedPointArray(object):
 
     def __neg__(self):
 
-        return self.__class__(-self.data, 
+        return self.__class__(-self.data,
                               fractional_bits=self.fractional_bits,
                               data_already_scaled=True)
 
@@ -198,7 +198,7 @@ class FixedPointArray(object):
 
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
-        
+
         output_frac_bits = max(other.fractional_bits, self.fractional_bits)
 
         # Firstly, shift the numbers to align the decimal point.
@@ -216,10 +216,10 @@ class FixedPointArray(object):
 
             self_data = self.data
 
-        output = self.__class__(self_data + other_data, 
+        output = self.__class__(self_data + other_data,
                     fractional_bits=output_frac_bits,
                     data_already_scaled=True)
-        
+
         return output
 
 
@@ -227,7 +227,7 @@ class FixedPointArray(object):
 
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
-        
+
         output_frac_bits = max(other.fractional_bits, self.fractional_bits)
 
         # Firstly, shift the numbers to align the decimal point.
@@ -245,12 +245,12 @@ class FixedPointArray(object):
 
             self_data = self.data
 
-        output = self.__class__(self_data - other_data, 
+        output = self.__class__(self_data - other_data,
                     fractional_bits=output_frac_bits,
                     data_already_scaled=True)
-        
+
         return output
-         
+
     def __rsub__(self, other):
         other = type(self)(other, fractional_bits=self.fractional_bits)
 
@@ -265,7 +265,7 @@ class FixedPointArray(object):
 
         result = f_round((self.data * 2**scaling_bits)/other.data)
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=fractional_bits,
                 data_already_scaled=True)
 
@@ -305,19 +305,19 @@ class FixedPointArray(object):
         output_fractional_bits = self.fractional_bits + int_bitshift
 
         int_data = f_round(self.data * 2**int_bitshift)
-        
+
         output = self.__class__(
             int_data, fractional_bits=output_fractional_bits,
             data_already_scaled=True)
 
         if output.max_bits > bitwidth:
-            # In this case an extra integer bit was created by the 
+            # In this case an extra integer bit was created by the
             # rounding
             int_bitshift -= 1
             output_fractional_bits -= 1
 
             int_data = f_round(self.data * 2**int_bitshift)
-            
+
             output = self.__class__(
                 int_data, fractional_bits=output_fractional_bits,
                 data_already_scaled=True)
@@ -325,14 +325,14 @@ class FixedPointArray(object):
         return output
 
     def copy(self):
-        
-        return self.__class__(self.data.copy(), 
+
+        return self.__class__(self.data.copy(),
                               fractional_bits=self.fractional_bits,
                               data_already_scaled=True)
 
     def transpose(self, *axes):
 
-        return self.__class__(self.data.transpose(*axes), 
+        return self.__class__(self.data.transpose(*axes),
                               fractional_bits=self.fractional_bits,
                               data_already_scaled=True)
 
@@ -344,7 +344,7 @@ class FixedPointArray(object):
     def conjugate(self):
         '''Return the complex conjugate of the array.
         '''
-        return self.__class__(self.data.conjugate(), 
+        return self.__class__(self.data.conjugate(),
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -360,7 +360,7 @@ class FixedPointArray(object):
 
     def dot(self, other):
         '''Take the dot product as per numpy.ndarray.dot().
-        
+
         To prevent overflow, the number of fractional bits used is the maximum
         of the fractional bits of the two inputs.
         '''
@@ -373,16 +373,16 @@ class FixedPointArray(object):
         post_scaling = 2**-scaling_bits
         result = f_round(self.data.dot(other.data) * post_scaling)
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=output_frac_bits,
                 data_already_scaled=True)
 
         return output
 
     def non_truncated_dot(self, other):
-        '''Take the dot product as per numpy.ndarray.dot() but without 
-        truncating the number of fractional bits of the output. That is, the 
-        number of fractional bits of the output is the sum of the fractional 
+        '''Take the dot product as per numpy.ndarray.dot() but without
+        truncating the number of fractional bits of the output. That is, the
+        number of fractional bits of the output is the sum of the fractional
         bits of the two inputs.
         '''
 
@@ -391,10 +391,10 @@ class FixedPointArray(object):
                              ' of type FixedPointArray.')
 
         output_frac_bits = other.fractional_bits + self.fractional_bits
-        
+
         result = self.data.dot(other.data)
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=output_frac_bits,
                 data_already_scaled=True)
 
@@ -412,10 +412,10 @@ class FixedPointArray(object):
                              ' of type FixedPointArray.')
 
         output_frac_bits = other.fractional_bits + self.fractional_bits
-        
+
         result = self.data * other.data
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=output_frac_bits,
                 data_already_scaled=True)
 
@@ -429,13 +429,13 @@ class FixedPointArray(object):
             raise ValueError('Invalid array: the argument should be an array'
                              ' of type FixedPointArray.')
 
-        scaling_bits = (other.fractional_bits - self.fractional_bits + 
+        scaling_bits = (other.fractional_bits - self.fractional_bits +
                         output_fractional_bits)
 
 
         result = f_round((self.data * 2**scaling_bits)/other.data)
 
-        output = self.__class__(result, 
+        output = self.__class__(result,
                 fractional_bits=output_fractional_bits,
                 data_already_scaled=True)
 
@@ -450,7 +450,7 @@ class FixedPointArray(object):
         else:
             data = self.data
 
-        return self.__class__(data.reshape(shape), 
+        return self.__class__(data.reshape(shape),
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -462,7 +462,7 @@ class FixedPointArray(object):
         else:
             data = self.data
 
-        return self.__class__(data.flatten(), 
+        return self.__class__(data.flatten(),
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -474,7 +474,7 @@ class FixedPointArray(object):
         else:
             data = self.data
 
-        return self.__class__(data.ravel(), 
+        return self.__class__(data.ravel(),
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -489,7 +489,7 @@ class FixedPointArray(object):
             return np.max(np.abs(self.as_floating_point()))
 
     def sum_abs(self):
-        '''Return the sum of the absolute values of all the values in the 
+        '''Return the sum of the absolute values of all the values in the
         array.
         '''
         if sparse.issparse(self.data):
@@ -508,7 +508,7 @@ class FixedPointArray(object):
     def real(self):
         '''The real part of the array.
         '''
-        return  self.__class__(self.data.real, 
+        return  self.__class__(self.data.real,
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
@@ -516,15 +516,15 @@ class FixedPointArray(object):
     def imag(self):
         '''The imaginary part of the array.
         '''
-        return  self.__class__(self.data.imag, 
+        return  self.__class__(self.data.imag,
                 fractional_bits=self.fractional_bits,
                 data_already_scaled=True)
 
     @property
     def dtype(self):
         '''Return the dtype of the underlying data. This is useful in that
-        allows fixed point object to be used in algorithms designed for 
-        Numpy that expect such a property. Linear operations and algorithms 
+        allows fixed point object to be used in algorithms designed for
+        Numpy that expect such a property. Linear operations and algorithms
         should work fine with fixed point arrays.
         '''
         return self.data.dtype
@@ -537,11 +537,11 @@ class FixedPointArray(object):
 
 
 class SignedFixedPointArray(FixedPointArray):
-    
+
     @property
     def max_bits(self):
         '''Returns the maximum number of bits needed to encode all the digits
-        in the data structure with the desired precision, always including a 
+        in the data structure with the desired precision, always including a
         sign bit.
         '''
 
@@ -553,7 +553,7 @@ class SignedFixedPointArray(FixedPointArray):
 
         if zero_array:
             max_bits = self.fractional_bits
-        
+
         else:
             # always include a sign bit.
             max_bits = self.max_integer_bits + self.fractional_bits + 1

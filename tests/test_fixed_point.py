@@ -9,7 +9,7 @@ from scipy import sparse
 import itertools
 
 class TestFixedPointArray(unittest.TestCase):
-    '''We should have a fixed point array object that works much like a 
+    '''We should have a fixed point array object that works much like a
     numpy array, only the data it represents is of a fixed point type, with
     the resultant knock-on consequences on any arithmetic operations it can
     be involved with.
@@ -21,7 +21,7 @@ class TestFixedPointArray(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestFixedPointArray, self).__init__(*args, **kwargs)
-        
+
         self.fp_class = FixedPointArray
 
     def create_test_array_pairs(self, a_shapes, b_shapes,
@@ -45,7 +45,7 @@ class TestFixedPointArray(unittest.TestCase):
         fixed_point_a = []
         fixed_point_b = []
 
-        par_iter = zip(itertools.product(a_shapes, a_frac_bits), 
+        par_iter = zip(itertools.product(a_shapes, a_frac_bits),
                        itertools.product(b_shapes, b_frac_bits))
 
         for (a_shape, each_a_frac_bits), (b_shape, each_b_frac_bits) in (
@@ -74,7 +74,7 @@ class TestFixedPointArray(unittest.TestCase):
 
             fixed_point_b.append(self.fp_class(b[-2], each_b_frac_bits))
             fixed_point_b.append(self.fp_class(b[-1], each_b_frac_bits))
-        
+
         return a, fixed_point_a, b, fixed_point_b
 
 
@@ -94,9 +94,9 @@ class TestFixedPointArray(unittest.TestCase):
     def test_data_already_scaled_flag(self):
         '''It should be possible to pass a pre-scaled numpy array.
 
-        This should be done by setting ``True`` a ``data_already_scaled`` 
+        This should be done by setting ``True`` a ``data_already_scaled``
         argument. This setting allows for arrays to be processed outside
-        of a FixedPointArray (as a numpy array) and then a new 
+        of a FixedPointArray (as a numpy array) and then a new
         FixedPointArray can be constructed from the result.
         '''
         a = np.random.randn(3) + 1j*np.random.randn(3)
@@ -115,11 +115,11 @@ class TestFixedPointArray(unittest.TestCase):
     def test_construct_with_fixed_point_array(self):
         '''We should be able to construct one FixedPointArray from another.
 
-        The fractional bits argument should still be required, and if it 
+        The fractional bits argument should still be required, and if it
         is different from the passed array, the new FixedPointArray has that
         which is provided by the argument.
 
-        If possible, a copy should be avoided, though this can only be the 
+        If possible, a copy should be avoided, though this can only be the
         case if the fractional bits passed is the same as the fractional bits
         of the existing fixed point array.
 
@@ -162,7 +162,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         # Start with an array filled with ones, which would normally round
         # up.
-        array_a = ((2**25 - 1) * 2**-frac_bits * 
+        array_a = ((2**25 - 1) * 2**-frac_bits *
                    (np.ones(10) + 1j*np.ones(10)))
 
         fp_a = self.fp_class(array_a, fractional_bits=frac_bits)
@@ -174,14 +174,14 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertEqual(fp_a.max_bits, truncated_a.max_bits)
 
         # Now show the two cases around the round-up/down transition
-        mid_point = (2**25 * 2**-frac_bits * 
+        mid_point = (2**25 * 2**-frac_bits *
                      (np.ones(10) + 1j*np.ones(10))) - (1 + 1j) * 2**-1
 
         array_a = mid_point
         array_b = mid_point - (1 + 1j) * 2**-frac_bits # Smallest value below
 
         fp_a = self.fp_class(array_a, fractional_bits=frac_bits)
-        fp_b = self.fp_class(array_b, fractional_bits=frac_bits)        
+        fp_b = self.fp_class(array_b, fractional_bits=frac_bits)
         truncated_a = self.fp_class(array_a, fractional_bits=0)
         truncated_b = self.fp_class(array_b, fractional_bits=0)
 
@@ -199,7 +199,7 @@ class TestFixedPointArray(unittest.TestCase):
     def test_data_is_not_copied(self):
         '''The internal data should be the same as passed in if possible.
 
-        This should be true for data_already_scaled being both True and 
+        This should be true for data_already_scaled being both True and
         false for that flag being False.
         '''
         a = np.random.randn(3) + 1j*np.random.randn(3)
@@ -208,13 +208,13 @@ class TestFixedPointArray(unittest.TestCase):
 
         new_fp_a = self.fp_class(fp_a.data, 10, data_already_scaled=True)
 
-        self.assertIsNot(a, fp_a.data)        
+        self.assertIsNot(a, fp_a.data)
         self.assertIs(new_fp_a.data, fp_a.data)
 
     def test_data_already_scaled_integer_only(self):
         '''Data with fractional parts with data_already_scaled should fail.
 
-        If an array is passed in that contains any fractional parts (i.e. 
+        If an array is passed in that contains any fractional parts (i.e.
         is not only integers) and ``data_already_scaled`` is ``True``, a
         ValueError should be raised.
         '''
@@ -231,7 +231,7 @@ class TestFixedPointArray(unittest.TestCase):
                                      data_already_scaled=True)
 
         self.assertRaises(ValueError, self.fp_class,
-                          sparse.csc_matrix(fp_a_data), 10, 
+                          sparse.csc_matrix(fp_a_data), 10,
                           data_already_scaled=True)
 
 
@@ -251,7 +251,7 @@ class TestFixedPointArray(unittest.TestCase):
 
             # Use complex numbers as they encompass the real
             test_array = (
-                    np.random.randn(*shape) + 
+                    np.random.randn(*shape) +
                     1j*np.random.randn(*shape)) * scale
 
             fp_array = self.fp_class(test_array, frac_bits)
@@ -269,7 +269,7 @@ class TestFixedPointArray(unittest.TestCase):
                        'about rare failures.')
 
             self.assertFalse(max_error < 2**(-frac_bits-2))
-        
+
     def test_complex_array(self):
         '''We should store complex numbers with sufficient precision.
         '''
@@ -277,7 +277,7 @@ class TestFixedPointArray(unittest.TestCase):
         for frac_bits in (-5, 4, 15, 24):
             for shape in ((4, 200), (1009,), (5, 65, 70)):
                 test_array = (
-                    np.random.randn(*shape) + 
+                    np.random.randn(*shape) +
                     1j*np.random.randn(*shape))
 
                 fp_array = self.fp_class(test_array, frac_bits)
@@ -290,7 +290,7 @@ class TestFixedPointArray(unittest.TestCase):
 
                 max_error = max(max_rerror, max_ierror)
                 self.assertTrue(max_error < 2**(-frac_bits-1))
-                
+
     def test_unary_neg(self):
         '''We should be able to negate the array with -array.
         '''
@@ -310,7 +310,7 @@ class TestFixedPointArray(unittest.TestCase):
     def test_mul(self):
         '''We should be able to multiply two fixed point arrays.
 
-        The number of fractional bits of the input should be the same as the 
+        The number of fractional bits of the input should be the same as the
         larger of the fractional bits of the two inputs.
 
         Broadcasting should work as with numpy.
@@ -328,12 +328,12 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a_frac_bits = each_fp_a.fractional_bits
             fp_b_frac_bits = each_fp_b.fractional_bits
 
-            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
 
-            ref_result = (f_round(_a*_b * 2**output_frac_bits) * 
+            ref_result = (f_round(_a*_b * 2**output_frac_bits) *
                            2**-output_frac_bits)
 
             result = each_fp_a * each_fp_b
@@ -343,11 +343,11 @@ class TestFixedPointArray(unittest.TestCase):
 
             self.assertTrue(result.fractional_bits == output_frac_bits)
 
-    
+
     def test_sum(self):
         '''We should be able to add two fixed point arrays.
 
-        The number of fractional bits of the input should be the same as the 
+        The number of fractional bits of the input should be the same as the
         larger of the fractional bits of the two inputs, thereby not losing
         precision.
 
@@ -366,7 +366,7 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a_frac_bits = each_fp_a.fractional_bits
             fp_b_frac_bits = each_fp_b.fractional_bits
 
-            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
@@ -381,12 +381,12 @@ class TestFixedPointArray(unittest.TestCase):
             self.assertTrue(
                 np.alltrue(result.as_floating_point() == ref_result))
 
-            self.assertTrue(result.fractional_bits == output_frac_bits)            
+            self.assertTrue(result.fractional_bits == output_frac_bits)
 
     def test_diff(self):
         '''We should be able to take the difference of two fixed point arrays.
 
-        The number of fractional bits of the input should be the same as the 
+        The number of fractional bits of the input should be the same as the
         larger of the fractional bits of the two inputs, thereby not losing
         precision
 
@@ -405,7 +405,7 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a_frac_bits = each_fp_a.fractional_bits
             fp_b_frac_bits = each_fp_b.fractional_bits
 
-            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
@@ -425,8 +425,8 @@ class TestFixedPointArray(unittest.TestCase):
     def test_non_fixed_point_diff(self):
         '''We should be able to subtract a non-fixed point from a fixed point
 
-        We should be able to subtract from the fixed point object a 
-        non-fixed point object, as long as it makes sense to 
+        We should be able to subtract from the fixed point object a
+        non-fixed point object, as long as it makes sense to
         convert it to a fixed point object - this should include scalars
         and normal numpy arrays. The conversion to the fixed point array
         should use the same number of fractional bits as the original array.
@@ -461,18 +461,18 @@ class TestFixedPointArray(unittest.TestCase):
             lsub_scalar_result = each_fp_a - scalar
 
             self.assertTrue(
-                np.alltrue(lsub_result.as_floating_point() == 
+                np.alltrue(lsub_result.as_floating_point() ==
                            lsub_ref_result))
-            
+
             self.assertTrue(
-                np.alltrue(lsub_scalar_result.as_floating_point() == 
+                np.alltrue(lsub_scalar_result.as_floating_point() ==
                            lsub_scalar_ref_result))
 
     def test_non_fixed_point_right_diff(self):
         '''We should be able to subtract a fixed point from a non-fixed point
 
-        We should be able to subtract from a non-fixed point object a 
-        fixed point object, as long as it makes sense to 
+        We should be able to subtract from a non-fixed point object a
+        fixed point object, as long as it makes sense to
         convert it to a fixed point object - this should include scalars
         and normal numpy arrays. The conversion to the fixed point array
         should use the same number of fractional bits as the original array.
@@ -509,11 +509,11 @@ class TestFixedPointArray(unittest.TestCase):
             rsub_scalar_result = scalar - each_fp_a
 
             self.assertTrue(
-                np.alltrue(rsub_result.as_floating_point() == 
+                np.alltrue(rsub_result.as_floating_point() ==
                            rsub_ref_result))
-            
+
             self.assertTrue(
-                np.alltrue(rsub_scalar_result.as_floating_point() == 
+                np.alltrue(rsub_scalar_result.as_floating_point() ==
                            rsub_scalar_ref_result))
 
     def test_divide(self):
@@ -550,7 +550,7 @@ class TestFixedPointArray(unittest.TestCase):
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
 
-            ref_result = (f_round((_a/_b) * 2**output_frac_bits) * 
+            ref_result = (f_round((_a/_b) * 2**output_frac_bits) *
                            2**-output_frac_bits)
 
             result = each_fp_a/each_fp_b
@@ -578,7 +578,7 @@ class TestFixedPointArray(unittest.TestCase):
 
             fp_scalar = round(scalar * 2**frac_bits) * 2**-frac_bits
 
-            ref_result = (f_round((_a/fp_scalar) * 2**frac_bits) * 
+            ref_result = (f_round((_a/fp_scalar) * 2**frac_bits) *
                           2**-frac_bits)
 
             result = fp_a/scalar
@@ -606,7 +606,7 @@ class TestFixedPointArray(unittest.TestCase):
 
             fp_scalar = f_round(scalar * 2**frac_bits) * 2**-frac_bits
 
-            ref_result = (f_round((fp_scalar/_a) * 2**frac_bits) * 
+            ref_result = (f_round((fp_scalar/_a) * 2**frac_bits) *
                           2**-frac_bits)
 
             result = scalar/fp_a
@@ -616,11 +616,11 @@ class TestFixedPointArray(unittest.TestCase):
     def test_equality_check(self):
         '''We should be able to test equality with a fixed point array
 
-        We should be able to do ``a == b`` and yield a numpy array of boolean 
+        We should be able to do ``a == b`` and yield a numpy array of boolean
         values where the elements of ``a`` equal the elements of ``b`` and
         false where they do not.
 
-        It should work regardless of the number of fractional bits of ``a`` 
+        It should work regardless of the number of fractional bits of ``a``
         and ``b``.
 
         If the arrays are of different size, then False should be returned.
@@ -633,7 +633,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         self.assertTrue(np.alltrue(fp_a == fp_b))
 
-        fp_c = self.fp_class(fp_b.as_floating_point(), 
+        fp_c = self.fp_class(fp_b.as_floating_point(),
                                fractional_bits = 12)
 
         self.assertTrue(np.alltrue(fp_a == fp_c))
@@ -678,7 +678,7 @@ class TestFixedPointArray(unittest.TestCase):
         '''We should be able to test equality with a numpy array
 
         Given a numpy array, we should be able to check which values of
-        the fixed point data are equal to the corresponding values of the 
+        the fixed point data are equal to the corresponding values of the
         numpy array. The numpy array should be coerced to be a fixed point of
         the same precision as the array and then a boolean numpy array should
         be returned where the values are equal.
@@ -728,7 +728,7 @@ class TestFixedPointArray(unittest.TestCase):
         '''We should be able to test not equals with a numpy array
 
         Given a numpy array, we should be able to check which values of
-        the fixed point data are not equal to the corresponding values of the 
+        the fixed point data are not equal to the corresponding values of the
         numpy array. The numpy array should be coerced to be a fixed point of
         the same precision as the array and then a boolean numpy array should
         be returned where the values are equal.
@@ -748,7 +748,7 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue((d != fp_a)[5:]))
         self.assertTrue(np.alltrue(np.logical_not(d != fp_a)[:5]))
 
-        self.assertTrue(d[5:] != fp_a)        
+        self.assertTrue(d[5:] != fp_a)
 
     def test_notequal_check(self):
         '''We should be able to test fixed point arrays are not equal
@@ -776,15 +776,15 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_dot_product(self):
         '''There should be a ``dot`` method.
-        The ``dot`` method  should take the dot product of two fixed point 
+        The ``dot`` method  should take the dot product of two fixed point
         arrays.
 
         The number of fractional bits of the output should be the maximum of
         the number of fractional bits of the two inputs.
         '''
-        
+
         a_shapes = ((3, 4, 5), (120,), (59, 34))
-        b_shapes = ((10, 5, 3), (120,), (34, 21)) 
+        b_shapes = ((10, 5, 3), (120,), (34, 21))
         a_frac_bits = (-3, 0, 12, 2, 32)
         b_frac_bits = (-5, 0, 13, 32, 32)
 
@@ -796,12 +796,12 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a_frac_bits = each_fp_a.fractional_bits
             fp_b_frac_bits = each_fp_b.fractional_bits
 
-            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
 
-            ref_result = (f_round(_a.dot(_b) * 2**output_frac_bits) * 
+            ref_result = (f_round(_a.dot(_b) * 2**output_frac_bits) *
                            2**-output_frac_bits)
 
             result = each_fp_a.dot(each_fp_b)
@@ -812,9 +812,9 @@ class TestFixedPointArray(unittest.TestCase):
     def test_non_fixed_point_array_dot_product(self):
         '''The``dot`` method should handle non fixed point arrays.
         '''
-        
+
         a_shapes = ((3, 4, 5), (120,), (59, 34))
-        b_shapes = ((10, 5, 3), (120,), (34, 21)) 
+        b_shapes = ((10, 5, 3), (120,), (34, 21))
         a_frac_bits = (-5, 0, 12, 2, 32)
         b_frac_bits = (-6, 0, 13, 32, 32)
 
@@ -830,7 +830,7 @@ class TestFixedPointArray(unittest.TestCase):
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
 
-            ref_result = (f_round(_a.dot(_b) * 2**output_frac_bits) * 
+            ref_result = (f_round(_a.dot(_b) * 2**output_frac_bits) *
                            2**-output_frac_bits)
 
             result = each_fp_a.dot(each_b)
@@ -840,15 +840,15 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_non_truncated_dot_product(self):
         '''There should be a ``non_truncated_dot`` method.
-        The ``non_truncated_dot`` method  should take the dot product of two 
-        fixed point arrays, but without imposing any truncation on the 
+        The ``non_truncated_dot`` method  should take the dot product of two
+        fixed point arrays, but without imposing any truncation on the
         fractional part of the result. That is, the number of output fractional
         bits should be the sum of the number of fractional bits of the two
         inputs.
         '''
-        
+
         a_shapes = ((3, 4, 5), (120,), (59, 34))
-        b_shapes = ((10, 5, 3), (120,), (34, 21)) 
+        b_shapes = ((10, 5, 3), (120,), (34, 21))
         a_frac_bits = (-5, 0, 12, 2, 32)
         b_frac_bits = (-7, 0, 13, 32, 32)
 
@@ -873,8 +873,8 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_non_truncated_dot_non_fp_fail(self):
         '''The non_truncated_dot method should only accept a FixedPointArray
-        
-        Passing something other than a FixedPointArray to the 
+
+        Passing something other than a FixedPointArray to the
         non_truncated_dot method should raise a ValueError exception.
         '''
         a = np.random.randn(20) + 1j*np.random.randn(20)
@@ -884,14 +884,14 @@ class TestFixedPointArray(unittest.TestCase):
             assert_raises_regex = self.assertRaisesRegex
         except AttributeError:
             assert_raises_regex = self.assertRaisesRegexp
-            
-        assert_raises_regex(ValueError, 'Invalid array', 
+
+        assert_raises_regex(ValueError, 'Invalid array',
                             fp_a.non_truncated_dot, a)
 
     def test_non_truncated_multiply(self):
         '''There should be a ``non_truncated_multiply`` method.
-        The ``non_truncated_multiply`` method  should multiply two 
-        fixed point arrays, but without imposing any truncation on the 
+        The ``non_truncated_multiply`` method  should multiply two
+        fixed point arrays, but without imposing any truncation on the
         fractional part of the result. That is, the number of output fractional
         bits should be the sum of the number of fractional bits of the two
         inputs.
@@ -912,7 +912,7 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a_frac_bits = each_fp_a.fractional_bits
             fp_b_frac_bits = each_fp_b.fractional_bits
 
-            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+            output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
             _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
             _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
@@ -927,8 +927,8 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_non_truncated_multiply_non_fp_fail(self):
         '''non_truncated_multiply should only accept a FixedPointArray arg.
-        
-        Passing something other than a FixedPointArray to the 
+
+        Passing something other than a FixedPointArray to the
         non_truncated_multiply method should raise a ValueError exception.
         '''
         a = np.random.randn(20) + 1j*np.random.randn(20)
@@ -938,17 +938,17 @@ class TestFixedPointArray(unittest.TestCase):
             assert_raises_regex = self.assertRaisesRegex
         except AttributeError:
             assert_raises_regex = self.assertRaisesRegexp
-            
-        assert_raises_regex(ValueError, 'Invalid array', 
+
+        assert_raises_regex(ValueError, 'Invalid array',
                             fp_a.non_truncated_multiply, a)
 
     def test_divide_with_precision(self):
         '''There should be a ``divide_with_precision`` method.
-        The ``divide_with_precision`` method  should divide two 
-        fixed point arrays, but with an additional argument of 
-        `fractional_bits` that dictates how many fractional bits to use for 
+        The ``divide_with_precision`` method  should divide two
+        fixed point arrays, but with an additional argument of
+        `fractional_bits` that dictates how many fractional bits to use for
         the output array.
-        
+
         Broadcasting should work as with numpy.
         '''
         a_shapes = ((3, 4, 5), (120,), (59, 34), (3, 4, 5), (59, 34), (1,))
@@ -968,25 +968,25 @@ class TestFixedPointArray(unittest.TestCase):
 
                 each_a = _each_a.copy()
                 each_b = _each_b.copy()
-                
+
                 fp_a_frac_bits = each_fp_a.fractional_bits
                 fp_b_frac_bits = each_fp_b.fractional_bits
 
                 if fp_a_frac_bits < 1:
                     # put the values into a range that is more useful
-                    each_a[each_a > 0] = ((each_a[each_a > 0] + 1) * 
+                    each_a[each_a > 0] = ((each_a[each_a > 0] + 1) *
                                           2**(2*-fp_a_frac_bits))
-                    each_a[each_a < 0] = ((each_a[each_a < 0] - 1) * 
+                    each_a[each_a < 0] = ((each_a[each_a < 0] - 1) *
                                           2**(2*-fp_a_frac_bits))
 
                 if fp_b_frac_bits < 1:
-                    each_b[each_b > 0] = ((each_b[each_b > 0] + 1) * 
+                    each_b[each_b > 0] = ((each_b[each_b > 0] + 1) *
                                           2**(2*-fp_b_frac_bits))
-                    each_b[each_b < 0] = ((each_b[each_b < 0] - 1) * 
+                    each_b[each_b < 0] = ((each_b[each_b < 0] - 1) *
                                           2**(2*-fp_b_frac_bits))
 
 
-                #output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits) 
+                #output_frac_bits = max(fp_a_frac_bits, fp_b_frac_bits)
 
                 _a = f_round(each_a * 2**fp_a_frac_bits) * 2**-fp_a_frac_bits
                 _b = f_round(each_b * 2**fp_b_frac_bits) * 2**-fp_b_frac_bits
@@ -998,7 +998,7 @@ class TestFixedPointArray(unittest.TestCase):
                 _b[_b == 0] += 1
                 fp_b[fp_b == 0] += 1
 
-                ref_result = (f_round((_a / _b) * 2**output_frac_bits) * 
+                ref_result = (f_round((_a / _b) * 2**output_frac_bits) *
                               2**-output_frac_bits)
 
                 result = fp_a.divide_with_precision(fp_b,
@@ -1010,8 +1010,8 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_divide_with_precision_non_fp_fail(self):
         '''divide_with_precision should only accept a FixedPointArray arg.
-        
-        Passing something other than a FixedPointArray to the 
+
+        Passing something other than a FixedPointArray to the
         divide_with_precision method should raise a ValueError exception.
         '''
         a = np.random.randn(20) + 1j*np.random.randn(20)
@@ -1021,8 +1021,8 @@ class TestFixedPointArray(unittest.TestCase):
             assert_raises_regex = self.assertRaisesRegex
         except AttributeError:
             assert_raises_regex = self.assertRaisesRegexp
-            
-        assert_raises_regex(ValueError, 'Invalid array', 
+
+        assert_raises_regex(ValueError, 'Invalid array',
                             fp_a.divide_with_precision, a, 0)
 
     def test_slicing(self):
@@ -1037,7 +1037,7 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(fp_a_slice.fractional_bits == fp_a.fractional_bits)
 
         fractional_bits = fp_a.fractional_bits
-        
+
         a_slice = f_round(a[:5] * 2**fractional_bits) * 2**-fractional_bits
 
         self.assertTrue(isinstance(fp_a_slice, self.fp_class))
@@ -1053,11 +1053,11 @@ class TestFixedPointArray(unittest.TestCase):
         fp_b = self.fp_class(b, 8)
 
         fp_b[:5] = fp_a[:5]
-        b[:5] = (f_round(a[:5] * 2**fp_a.fractional_bits) * 
+        b[:5] = (f_round(a[:5] * 2**fp_a.fractional_bits) *
                  2**-fp_a.fractional_bits)
 
         fractional_bits = fp_b.fractional_bits
-        
+
         _b = f_round(b * 2**fractional_bits) * 2**-fractional_bits
         self.assertTrue(np.alltrue(_b == fp_b.as_floating_point()))
 
@@ -1068,7 +1068,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         sparse_a = sparse.csc_matrix(a)
         sparse_b = sparse.csc_matrix(b)
-        
+
         fp_a = self.fp_class(a, 10)
         fp_b = self.fp_class(b, 8)
 
@@ -1091,14 +1091,14 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_sparse_multiplication(self):
         '''We should be able to multiply sparse arrays.
-        The behaviour of multiplying sparse arrays should be the same as with 
+        The behaviour of multiplying sparse arrays should be the same as with
         non sparse arrays - i.e. not a dot product.
         '''
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # multiplication
         self.assertTrue(np.alltrue(
-            (fp_a * fp_b).as_floating_point() == 
+            (fp_a * fp_b).as_floating_point() ==
             (fp_sparse_a * fp_sparse_b).as_floating_point()))
 
     def test_sparse_add(self):
@@ -1109,7 +1109,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         # addition
         self.assertTrue(np.alltrue(
-            (fp_a + fp_b).as_floating_point() == 
+            (fp_a + fp_b).as_floating_point() ==
             (fp_sparse_a + fp_sparse_b).as_floating_point()))
 
     def test_sparse_diff(self):
@@ -1119,7 +1119,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         # subtraction
         self.assertTrue(np.alltrue(
-            (fp_a - fp_b).as_floating_point() == 
+            (fp_a - fp_b).as_floating_point() ==
             (fp_sparse_a - fp_sparse_b).as_floating_point()))
 
 
@@ -1130,7 +1130,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         # .dot()
         self.assertTrue(np.alltrue(
-            (fp_a - fp_b).as_floating_point() == 
+            (fp_a - fp_b).as_floating_point() ==
             (fp_sparse_a - fp_sparse_b).as_floating_point()))
 
     def test_dtype_property(self):
@@ -1173,7 +1173,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_imag_a = fp_cmplx_a.imag
         sparse_fp_imag_a = sparse_fp_cmplx_a.imag
-        
+
         self.assertTrue(isinstance(fp_imag_a, self.fp_class))
         self.assertTrue(np.alltrue(
             fp_imag_a.as_floating_point() ==
@@ -1194,7 +1194,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_real_a = fp_cmplx_a.real
         sparse_fp_real_a = sparse_fp_cmplx_a.real
-        
+
         self.assertTrue(isinstance(fp_real_a, self.fp_class))
         self.assertTrue(np.alltrue(
             fp_real_a.as_floating_point() ==
@@ -1217,7 +1217,7 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_sum_abs(self):
         '''There should be a ``sum_abs`` method.
-        The ``sum_abs`` method should should return the sum of the 
+        The ``sum_abs`` method should should return the sum of the
         absolute values of the array.
         '''
         cmplx_a = np.random.randn(20, 20) + 1j*np.random.randn(20, 20)
@@ -1236,8 +1236,8 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.allclose(test_out, sparse_fp_cmplx_a.sum_abs()))
 
     def test_max_abs(self):
-        '''There should be a ``max_abs`` method. 
-        the ``max_abs`` method should return the maximum value of the 
+        '''There should be a ``max_abs`` method.
+        the ``max_abs`` method should return the maximum value of the
         absolute values of the array.
         '''
         cmplx_a = np.random.randn(20, 20) + 1j*np.random.randn(20, 20)
@@ -1257,7 +1257,7 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_max(self):
         '''There should be a ``max`` method.
-        The ``max`` method should return the maximum value in the array (as 
+        The ``max`` method should return the maximum value in the array (as
         defined by numpy when it comes to complex values).
         '''
 
@@ -1292,17 +1292,17 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(isinstance(fp_cmplx_a.ravel(), self.fp_class))
 
         self.assertTrue(len(fp_cmplx_a.ravel().shape) == 1)
-        self.assertTrue(np.prod(fp_cmplx_a.shape) == len(fp_cmplx_a.ravel()))        
-        self.assertTrue(fp_cmplx_a.data.ctypes.data == 
+        self.assertTrue(np.prod(fp_cmplx_a.shape) == len(fp_cmplx_a.ravel()))
+        self.assertTrue(fp_cmplx_a.data.ctypes.data ==
                         fp_cmplx_a.ravel().data.ctypes.data)
-        
+
         self.assertTrue(len(sparse_fp_cmplx_a.ravel().shape) == 1)
-        self.assertTrue(np.prod(sparse_fp_cmplx_a.shape) == 
+        self.assertTrue(np.prod(sparse_fp_cmplx_a.shape) ==
                         len(sparse_fp_cmplx_a.ravel()))
 
     def test_flatten(self):
         '''There should be a ``flatten`` method.
-        The ``flatten`` method should return a flattened copy of the fixed 
+        The ``flatten`` method should return a flattened copy of the fixed
         point array.
         '''
         cmplx_a = np.random.randn(20, 20) + 1j*np.random.randn(20, 20)
@@ -1314,13 +1314,13 @@ class TestFixedPointArray(unittest.TestCase):
             sparse.csc_matrix(cmplx_a), frac_bits)
 
         self.assertTrue(len(fp_cmplx_a.flatten().shape) == 1)
-        self.assertTrue(np.prod(fp_cmplx_a.shape) == 
-                        len(fp_cmplx_a.flatten()))        
-        self.assertFalse(fp_cmplx_a.data.ctypes.data == 
+        self.assertTrue(np.prod(fp_cmplx_a.shape) ==
+                        len(fp_cmplx_a.flatten()))
+        self.assertFalse(fp_cmplx_a.data.ctypes.data ==
                         fp_cmplx_a.flatten().data.ctypes.data)
-        
+
         self.assertTrue(len(sparse_fp_cmplx_a.flatten().shape) == 1)
-        self.assertTrue(np.prod(sparse_fp_cmplx_a.shape) == 
+        self.assertTrue(np.prod(sparse_fp_cmplx_a.shape) ==
                         len(sparse_fp_cmplx_a.flatten()))
 
     def test_copy(self):
@@ -1366,7 +1366,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         sparse_fp_cmplx_a = self.fp_class(
             sparse.csc_matrix(cmplx_a), frac_bits)
-        
+
         a = f_round(cmplx_a * 2**frac_bits) * 2**-frac_bits
 
         self.assertTrue(np.all(
@@ -1379,7 +1379,7 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_transpose(self):
         '''There should be a ``transpose`` method.
-        The ``transpose`` method return the transpose of the dataset, as 
+        The ``transpose`` method return the transpose of the dataset, as
         described by :meth:`numpy.transpose`
         '''
         cmplx_a = np.random.randn(20, 10) + 1j*np.random.randn(20, 10)
@@ -1402,7 +1402,7 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_conjugate(self):
         '''There should be a ``conjugate`` method.
-        The ``conjugate`` method should return the complex conjugate of all 
+        The ``conjugate`` method should return the complex conjugate of all
         the elements in the array as a new fixed point array.
         '''
         cmplx_a = np.random.randn(20, 10) + 1j*np.random.randn(20, 10)
@@ -1447,8 +1447,8 @@ class TestFixedPointArray(unittest.TestCase):
 
     def test_max_integer_bits(self):
         '''There should be a ``max_integer_bits`` property.
-        The ``max_integer_bits`` property should be the maximum number of 
-        integer bits needed in order to store the integer part of every 
+        The ``max_integer_bits`` property should be the maximum number of
+        integer bits needed in order to store the integer part of every
         value in the array.
         '''
         frac_bits = 5
@@ -1473,7 +1473,7 @@ class TestFixedPointArray(unittest.TestCase):
         precision. It should be the sum of the fractional bits and the
         maximum integer bits.
 
-        If a sign bit is needed, that should also be included in the bit 
+        If a sign bit is needed, that should also be included in the bit
         count.
 
         A zero array should have the number of fractional bits defined by
@@ -1489,9 +1489,9 @@ class TestFixedPointArray(unittest.TestCase):
                 neg_b = np.ones(20) - np.ones(20) * 2**scale_power * 1j
 
                 fp_a = self.fp_class(a, frac_bits)
-                fp_neg_a = self.fp_class(neg_a, frac_bits)                
+                fp_neg_a = self.fp_class(neg_a, frac_bits)
                 fp_b = self.fp_class(b, frac_bits)
-                fp_neg_b = self.fp_class(neg_b, frac_bits)                
+                fp_neg_b = self.fp_class(neg_b, frac_bits)
 
                 if -frac_bits > scale_power:
                     self.assertTrue(fp_a.max_bits == frac_bits)
@@ -1515,11 +1515,11 @@ class TestFixedPointArray(unittest.TestCase):
                         int_power = 0
 
                     self.assertTrue(
-                        (fp_a - 2**int_power).max_bits == 
+                        (fp_a - 2**int_power).max_bits ==
                         frac_bits + scale_power)
 
                     self.assertTrue(
-                        (fp_b - 2**int_power*1j).max_bits == 
+                        (fp_b - 2**int_power*1j).max_bits ==
                         frac_bits + scale_power)
 
     def test_sparse_max_bits(self):
@@ -1539,7 +1539,7 @@ class TestFixedPointArray(unittest.TestCase):
             np.ones(20) - np.ones(20) * 2**scale_power * 1j)
 
         fp_a = self.fp_class(a, frac_bits)
-        fp_neg_a = self.fp_class(neg_a, frac_bits)                
+        fp_neg_a = self.fp_class(neg_a, frac_bits)
         fp_b = self.fp_class(b, frac_bits)
         fp_neg_b = self.fp_class(neg_b, frac_bits)
 
@@ -1547,7 +1547,7 @@ class TestFixedPointArray(unittest.TestCase):
             fp_a.max_bits == frac_bits + scale_power + 1)
         self.assertTrue(
             (fp_neg_a).max_bits == frac_bits + scale_power + 2)
-        
+
         self.assertTrue(
             fp_b.max_bits == frac_bits + scale_power + 1)
         self.assertTrue(
@@ -1561,8 +1561,8 @@ class TestFixedPointArray(unittest.TestCase):
         Values that are longer than the supplied bitwidth are truncated to
         the defined bitwidth.
 
-        Values that are shorter are zero extended at the low end to fill 
-        the desired bitwidth (that is, the number of fractional bits is 
+        Values that are shorter are zero extended at the low end to fill
+        the desired bitwidth (that is, the number of fractional bits is
         increased).
         '''
         cmplx_a = np.random.randn(5) + 1j*np.random.randn(5)
@@ -1604,9 +1604,9 @@ class TestFixedPointArray(unittest.TestCase):
                     extra_bits -= 1
                     fixed_ref_int_a = f_round(ref_int_a * 2**extra_bits)
 
-                fixed_ref_fp_a = (fixed_ref_int_a * 
+                fixed_ref_fp_a = (fixed_ref_int_a *
                                   2**(-(frac_bits + extra_bits)))
-                
+
                 self.assertEqual(fixed_fp_cmplx_a.max_bits, max_bits)
                 self.assertTrue(np.all(
                     fixed_ref_fp_a == fixed_fp_cmplx_a.as_floating_point()))
@@ -1616,13 +1616,13 @@ if __name__ == "__main__":
 
 class TestSignedFixedPointArray(TestFixedPointArray):
     '''There should be an equivalent of the FixedPointArray but in which the
-    array (and by extension, the outputs from any operations that use the 
+    array (and by extension, the outputs from any operations that use the
     array) *always* include a sign bit.
     '''
-    
+
     def __init__(self, *args, **kwargs):
         super(TestFixedPointArray, self).__init__(*args, **kwargs)
-        
+
         self.fp_class = SignedFixedPointArray
 
     def test_max_bits(self):
@@ -1632,11 +1632,11 @@ class TestSignedFixedPointArray(TestFixedPointArray):
         precision. It should be the sum of the fractional bits and the
         maximum integer bits.
 
-        Different to the equivalent test case in TestFixedPointArray, 
+        Different to the equivalent test case in TestFixedPointArray,
         the sign bit should always be included.
 
         A zero array should have the number of fractional bits defined by
-        the fractional bits (and, of course, the sign bit). This is because 
+        the fractional bits (and, of course, the sign bit). This is because
         zero is always to a certain precision.
         '''
         for frac_bits in (-5, -3, -1, 0, 4, 7, 10, 15):
@@ -1648,9 +1648,9 @@ class TestSignedFixedPointArray(TestFixedPointArray):
                 neg_b = np.ones(20) - np.ones(20) * 2**scale_power * 1j
 
                 fp_a = self.fp_class(a, frac_bits)
-                fp_neg_a = self.fp_class(neg_a, frac_bits)                
+                fp_neg_a = self.fp_class(neg_a, frac_bits)
                 fp_b = self.fp_class(b, frac_bits)
-                fp_neg_b = self.fp_class(neg_b, frac_bits)                
+                fp_neg_b = self.fp_class(neg_b, frac_bits)
 
                 if -frac_bits > scale_power:
                     self.assertTrue(fp_a.max_bits == frac_bits)
@@ -1676,11 +1676,11 @@ class TestSignedFixedPointArray(TestFixedPointArray):
 
                     # Always include the sign bit
                     self.assertTrue(
-                        (fp_a - 2**int_power).max_bits == 
+                        (fp_a - 2**int_power).max_bits ==
                         frac_bits + scale_power + 1)
 
                     self.assertTrue(
-                        (fp_b - 2**int_power*1j).max_bits == 
+                        (fp_b - 2**int_power*1j).max_bits ==
                         frac_bits + scale_power + 1)
 
     def test_sparse_max_bits(self):
@@ -1700,7 +1700,7 @@ class TestSignedFixedPointArray(TestFixedPointArray):
             np.ones(20) - np.ones(20) * 2**scale_power * 1j)
 
         fp_a = self.fp_class(a, frac_bits)
-        fp_neg_a = self.fp_class(neg_a, frac_bits)                
+        fp_neg_a = self.fp_class(neg_a, frac_bits)
         fp_b = self.fp_class(b, frac_bits)
         fp_neg_b = self.fp_class(neg_b, frac_bits)
 
@@ -1708,7 +1708,7 @@ class TestSignedFixedPointArray(TestFixedPointArray):
             fp_a.max_bits == frac_bits + scale_power + 2)
         self.assertTrue(
             (fp_neg_a).max_bits == frac_bits + scale_power + 2)
-        
+
         self.assertTrue(
             fp_b.max_bits == frac_bits + scale_power + 2)
         self.assertTrue(
