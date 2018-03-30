@@ -142,7 +142,7 @@ class FixedPointArray(object):
 
         return self.as_floating_point() == other.as_floating_point()
 
-    def __lte__(self, other):
+    def __le__(self, other):
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
 
@@ -154,7 +154,7 @@ class FixedPointArray(object):
 
         return self.as_floating_point() < other.as_floating_point()
 
-    def __gte__(self, other):
+    def __ge__(self, other):
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
 
