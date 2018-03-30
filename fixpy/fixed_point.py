@@ -9,7 +9,7 @@ class FixedPointArray(object):
     # Tell numpy that we're happy to process an array.
     __array_priority__ = 1.0
 
-    def __init__(self, data, fractional_bits, data_already_scaled=False):
+    def __init__(self, data, fractional_bits, data_already_scaled=False, **kwargs):
         '''A ``FixedPointArray`` is created from the data provided in the
         first argument, with the number of bits allocated to the fractional
         part of the array dictated by ``fractional_bits``.
@@ -50,6 +50,8 @@ class FixedPointArray(object):
             storage_type = 'complex128'
         else:
             storage_type = 'float64'
+
+        storage_type = kwargs.get('storage_type', storage_type)
 
         if not data_already_scaled:
             scaling = 2 ** fractional_bits
@@ -590,7 +592,7 @@ class FixedPointArray(object):
             data_already_scaled=True
         )
 
-    def squeze(self, axis=None):
+    def squeeze(self, axis=None):
         '''
         Remove single-dimensional entries from the shape of an array.
         '''
