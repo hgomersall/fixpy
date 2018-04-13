@@ -1,6 +1,18 @@
 
 import numpy as np
-from scipy import sparse
+
+class MockSparse(object):
+    '''A class that can be used for missing SciPy. It always returns false
+    which means the sparse portions of the code are bypassed.
+    '''
+    def issparse(self, *args, **kwargs):
+        return False
+
+try:
+    from scipy import sparse
+except ImportError:
+    sparse = MockSparse()
+
 import math
 
 f_round = np.round
