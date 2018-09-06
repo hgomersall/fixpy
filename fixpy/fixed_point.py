@@ -551,6 +551,43 @@ class FixedPointArray(object):
 class SignedFixedPointArray(FixedPointArray):
 
     @property
+    def max_integer_bits(self):
+        '''Returns the maximum number of bits needed to encode the integer
+        part of data (based on the largest single value in the array).
+        '''
+        max_data_val = max(self.data.real.max(), self.data.imag.max())
+        min_data_val = min(self.data.real.min(), self.data.imag.min())
+
+        max_int = math.floor(max_data_val * 2**-self.fractional_bits)
+
+        min_val = min_data_val * 2**-self.fractional_bits
+        if min_val > 0:
+            min_val = 0
+
+        min_int = math.ceil(min_val)
+
+        if abs(min_int) > abs(max_int):
+            if min_int < 0:
+                if min_int == min_val:
+                    # This captures the special case of -2**n needing only
+                    # n bits
+                    max_integer_bits = (
+                        int(math.floor(math.log(abs(min_int), 2))))
+                else:
+                    max_integer_bits = int(
+                        math.floor(math.log(abs(min_int), 2)) + 1)
+            else:
+                max_integer_bits = 0
+
+        else:
+            if max_int > 0:
+                max_integer_bits = int(math.floor(math.log(max_int, 2)) + 1)
+            else:
+                max_integer_bits = 0
+
+        return max_integer_bits
+
+    @property
     def max_bits(self):
         '''Returns the maximum number of bits needed to encode all the digits
         in the data structure with the desired precision, always including a

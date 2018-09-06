@@ -2,9 +2,12 @@
 import unittest
 import numpy as np
 from fixpy import FixedPointArray, SignedFixedPointArray
-from fixpy.fixed_point import f_round
+from fixpy.fixed_point import f_round, MockSparse
 
-from scipy import sparse
+try:
+    from scipy import sparse
+except ImportError:
+    sparse = MockSparse()
 
 import itertools
 
@@ -867,7 +870,6 @@ class TestFixedPointArray(unittest.TestCase):
 
             result = each_fp_a.non_truncated_dot(each_fp_b)
 
-            #print result, ref_result
             self.assertTrue(
                 np.alltrue(result.as_floating_point() == ref_result))
 
@@ -1062,6 +1064,10 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue(_b == fp_b.as_floating_point()))
 
     def _get_sparse_arrays(self):
+
+        if isinstance(sparse, MockSparse):
+            raise unittest.SkipTest(
+                'Scipy is missing, so sparse tests are ignored.')
 
         a = np.random.randn(20, 20) + 1j*np.random.randn(20, 20)
         b = np.random.randn(20, 20) + 1j*np.random.randn(20, 20)
@@ -1625,6 +1631,40 @@ class TestSignedFixedPointArray(TestFixedPointArray):
 
         self.fp_class = SignedFixedPointArray
 
+    def test_max_integer_bits(self):
+        '''There should be a ``max_integer_bits`` property.
+        The ``max_integer_bits`` property should be the maximum number of
+        integer bits needed in order to store the integer part of every
+        value in the array.
+        '''
+
+        super(TestSignedFixedPointArray, self).test_max_integer_bits()
+
+        # we also test the special case of having -2**n, in which case we
+        # actually need 1 fewer integer bits than the positive case (since
+        # the signed range is [-2**n, 2**n), with the inclusive lower bound
+        # defined by only the sign bit being high).
+
+        frac_bits = 5
+
+        for scale_power in (1, 2, 3, 4, 5, 6):
+            a = -np.ones(20) * 2**scale_power
+            b = 0 - np.ones(20) * 2**scale_power * 1j
+
+            a = a - 0.004
+            fp_a = self.fp_class(a, frac_bits)
+            fp_b = self.fp_class(b, frac_bits)
+
+            smallest_frac = 2**-(frac_bits - 1)
+
+            self.assertTrue(fp_a.max_integer_bits == scale_power)
+            self.assertTrue((fp_a - smallest_frac).max_integer_bits == (
+                scale_power + 1))
+            self.assertTrue(fp_b.max_integer_bits == scale_power)
+            self.assertTrue((fp_b - smallest_frac * 1j).max_integer_bits == (
+                scale_power + 1))
+
+
     def test_max_bits(self):
         '''There should be a ``max_bits`` property.
         The ``max_bits`` property should be the number of bits required to
@@ -1660,13 +1700,14 @@ class TestSignedFixedPointArray(TestFixedPointArray):
                 # We always have a sign bit now.
                 self.assertTrue(
                     fp_a.max_bits == frac_bits + scale_power + 2)
+                # but we need one less bit here
                 self.assertTrue(
-                    (fp_neg_a).max_bits == frac_bits + scale_power + 2)
+                    (fp_neg_a).max_bits == frac_bits + scale_power + 1)
 
                 self.assertTrue(
                     fp_b.max_bits == frac_bits + scale_power + 2)
                 self.assertTrue(
-                    (fp_neg_b).max_bits == frac_bits + scale_power + 2)
+                    (fp_neg_b).max_bits == frac_bits + scale_power + 1)
 
                 if -frac_bits != scale_power:
                     if frac_bits < 0:
@@ -1707,9 +1748,9 @@ class TestSignedFixedPointArray(TestFixedPointArray):
         self.assertTrue(
             fp_a.max_bits == frac_bits + scale_power + 2)
         self.assertTrue(
-            (fp_neg_a).max_bits == frac_bits + scale_power + 2)
+            (fp_neg_a).max_bits == frac_bits + scale_power + 1)
 
         self.assertTrue(
             fp_b.max_bits == frac_bits + scale_power + 2)
         self.assertTrue(
-            (fp_neg_b).max_bits == frac_bits + scale_power + 2)
+            (fp_neg_b).max_bits == frac_bits + scale_power + 1)
