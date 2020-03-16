@@ -75,7 +75,7 @@ class FixedPointArray(object):
             # The following returns true for data containing fractional parts.
             # It is robust to complex data and to sparse arrays (not many
             # solutions are!).
-            if len((f_round(data) - data).nonzero()[0]) != 0:
+            if len(np.atleast_1d(f_round(data) - data).nonzero()[0]) != 0:
                 raise ValueError('When data_already_scaled is set to True, '
                                  'the data should have zero fractional part. '
                                  'i.e. it should be all integers (though not '
