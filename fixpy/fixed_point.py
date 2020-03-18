@@ -1,4 +1,3 @@
-
 import numpy as np
 
 class MockSparse(object):
@@ -17,12 +16,12 @@ import math
 
 f_round = np.round
 
-class FixedPointArray(object):
 
+class FixedPointArray(object):
     # Tell numpy that we're happy to process an array.
     __array_priority__ = 1.0
 
-    def __init__(self, data, fractional_bits, data_already_scaled=False):
+    def __init__(self, data, fractional_bits, data_already_scaled=False, **kwargs):
         '''A ``FixedPointArray`` is created from the data provided in the
         first argument, with the number of bits allocated to the fractional
         part of the array dictated by ``fractional_bits``.
@@ -42,14 +41,12 @@ class FixedPointArray(object):
         part, a ``ValueError`` is raised. This is to protect against erroneous
         arguments.
         '''
-
         if isinstance(data, FixedPointArray):
-
             if fractional_bits != data.fractional_bits:
                 scaling_fractional_bits = (
-                    fractional_bits - data.fractional_bits)
-
-                data = f_round(data.data.copy() * 2**scaling_fractional_bits)
+                        fractional_bits - data.fractional_bits
+                    )
+                data = f_round(data.data.copy() * 2 ** scaling_fractional_bits)
             else:
                 data = data.data
 
@@ -61,16 +58,16 @@ class FixedPointArray(object):
         else:
             is_complex = np.iscomplexobj(data.data)
 
-
         if is_complex:
             storage_type = 'complex128'
         else:
             storage_type = 'float64'
 
+        storage_type = kwargs.get('storage_type', storage_type)
+
         if not data_already_scaled:
-            scaling = 2**fractional_bits
-            self.data = (
-                    f_round(data * scaling).astype(storage_type))
+            scaling = 2 ** fractional_bits
+            self.data = (f_round(data * scaling).astype(storage_type))
         else:
             # The following returns true for data containing fractional parts.
             # It is robust to complex data and to sparse arrays (not many
@@ -93,9 +90,10 @@ class FixedPointArray(object):
         '''
         max_val = max(
                 np.abs(self.data.real).max(),
-                np.abs(self.data.imag).max())
+                np.abs(self.data.imag).max()
+            )
 
-        max_int = math.floor(max_val * 2**-self.fractional_bits)
+        max_int = math.floor(max_val * 2 ** -self.fractional_bits)
 
         if max_int > 0:
             max_integer_bits = int(math.floor(math.log(max_int, 2)) + 1)
@@ -110,7 +108,6 @@ class FixedPointArray(object):
         in the data structure with the desired precision, including a sign
         bit if it is necessary.
         '''
-
         try:
             # For the sparse matrix
             zero_array = (self.data.getnnz() == 0)
@@ -136,29 +133,52 @@ class FixedPointArray(object):
 
         return max_bits
 
-
     def __getitem__(self, _slice):
-
         sliced_data = self.data[_slice]
-        return self.__class__(sliced_data,
+        return self.__class__(
+                sliced_data,
                 fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+                data_already_scaled=True
+            )
 
     def __setitem__(self, _slice, value):
+        if not isinstance(value, type(self)):
+            value = type(self)(value, fractional_bits=self.fractional_bits)
 
-        scaling = 2**(self.fractional_bits - value.fractional_bits)
-
+        scaling = 2 ** (self.fractional_bits - value.fractional_bits)
         self.data[_slice] = f_round(value.data * scaling)
 
     def __eq__(self, other):
-
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
 
         return self.as_floating_point() == other.as_floating_point()
 
-    def __ne__(self, other):
+    def __le__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
 
+        return self.as_floating_point() <= other.as_floating_point()
+
+    def __lt__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+
+        return self.as_floating_point() < other.as_floating_point()
+
+    def __ge__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+
+        return self.as_floating_point() >= other.as_floating_point()
+
+    def __gt__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+
+        return self.as_floating_point() > other.as_floating_point()
+
+    def __ne__(self, other):
         if not isinstance(other, type(self)):
             other = type(self)(other, fractional_bits=self.fractional_bits)
 
@@ -181,30 +201,36 @@ class FixedPointArray(object):
         # The post scaling is determined by the fractional_bits of
         # other. This is so we have the fractional bits of the solution
         # the same as this self.
-        post_scaling = 2**-scaling_bits
+        post_scaling = 2 ** -scaling_bits
 
         if sparse.issparse(self.data):
-            result = f_round(self.data.multiply(other.data) *
-                             np.float64(post_scaling))
+            result = f_round(
+                    self.data.multiply(other.data) *
+                    np.float64(post_scaling)
+                )
         else:
-            result = f_round(self.data * other.data *
-                             np.float64(post_scaling))
+            result = f_round(
+                    self.data * other.data *
+                    np.float64(post_scaling)
+                )
 
-        output = self.__class__(result,
+        output = self.__class__(
+                result,
                 fractional_bits=output_frac_bits,
-                data_already_scaled=True)
+                data_already_scaled=True
+            )
 
         return output
 
     def __rmul__(self, other):
-
-        return self*other
+        return self * other
 
     def __neg__(self):
-
-        return self.__class__(-self.data,
-                              fractional_bits=self.fractional_bits,
-                              data_already_scaled=True)
+        return self.__class__(
+                -self.data,
+                fractional_bits=self.fractional_bits,
+                data_already_scaled=True
+                )
 
     def __add__(self, other):
 
@@ -216,24 +242,27 @@ class FixedPointArray(object):
         # Firstly, shift the numbers to align the decimal point.
         if self.fractional_bits < output_frac_bits:
             self_data = f_round(
-                self.data*
-                2**(output_frac_bits - self.fractional_bits))
+                    self.data *
+                    2 ** (output_frac_bits - self.fractional_bits)
+                )
 
             other_data = other.data
 
         else:
             other_data = f_round(
-                other.data*
-                2**(output_frac_bits - other.fractional_bits))
+                    other.data *
+                    2 ** (output_frac_bits - other.fractional_bits)
+                )
 
             self_data = self.data
 
-        output = self.__class__(self_data + other_data,
-                    fractional_bits=output_frac_bits,
-                    data_already_scaled=True)
+        output = self.__class__(
+                self_data + other_data,
+                fractional_bits=output_frac_bits,
+                data_already_scaled=True
+            )
 
         return output
-
 
     def __sub__(self, other):
 
@@ -245,21 +274,23 @@ class FixedPointArray(object):
         # Firstly, shift the numbers to align the decimal point.
         if self.fractional_bits < output_frac_bits:
             self_data = f_round(
-                self.data*
-                2**(output_frac_bits - self.fractional_bits))
+                self.data * 2 ** (output_frac_bits - self.fractional_bits))
 
             other_data = other.data
 
         else:
             other_data = f_round(
-                other.data*
-                2**(output_frac_bits - other.fractional_bits))
+                    other.data *
+                    2 ** (output_frac_bits - other.fractional_bits)
+                )
 
             self_data = self.data
 
-        output = self.__class__(self_data - other_data,
-                    fractional_bits=output_frac_bits,
-                    data_already_scaled=True)
+        output = self.__class__(
+                self_data - other_data,
+                fractional_bits=output_frac_bits,
+                data_already_scaled=True
+            )
 
         return output
 
@@ -275,14 +306,15 @@ class FixedPointArray(object):
         fractional_bits = self.fractional_bits
         scaling_bits = other.fractional_bits
 
-        result = f_round((self.data * 2**scaling_bits)/other.data)
+        result = f_round((self.data * 2 ** scaling_bits)/other.data)
 
-        output = self.__class__(result,
+        output = self.__class__(
+                result,
                 fractional_bits=fractional_bits,
-                data_already_scaled=True)
+                data_already_scaled=True
+            )
 
         return output
-
 
     def __div__(self, other):
         return self.__truediv__(other)
@@ -291,15 +323,52 @@ class FixedPointArray(object):
 
         other = type(self)(other, fractional_bits=self.fractional_bits)
 
-        return other/self
-
+        return other / self
 
     def __rdiv__(self, other):
         return self.__rtruediv__(other)
 
-    def __repr__(self):
+    def __xor__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
 
-        repr_string = '<Q%d.%d fixed point array>(\n%s)' % (
+        return (
+            self.as_floating_point().astype(np.bool) ^
+            other.as_floating_point().astype(np.bool)
+        )
+
+    def __or__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+
+        return (
+            self.as_floating_point().astype(np.bool) |
+            other.as_floating_point().astype(np.bool)
+        )
+
+    def __and__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+
+        return (
+            self.as_floating_point().astype(np.bool) &
+            other.as_floating_point().astype(np.bool)
+        )
+
+    def __pow__(self, other):
+        if not isinstance(other, type(self)):
+            other = type(self)(other, fractional_bits=self.fractional_bits)
+        output_frac_bits = max(self.fractional_bits, other.fractional_bits)
+        return type(self)(
+            np.power(
+                self.as_floating_point(),
+                other.as_floating_point()
+            ),
+            fractional_bits=output_frac_bits
+        )
+
+    def __repr__(self):
+        repr_string = 'Q<%d.%d>: %s' % (
             self.max_integer_bits,
             self.fractional_bits,
             self.as_floating_point().__str__())
@@ -307,7 +376,8 @@ class FixedPointArray(object):
         return repr_string
 
     def fix_to_bitwidth(self, bitwidth):
-        '''Returns a new fixed point array with the bitwidth fixed to be
+        '''
+        Returns a new fixed point array with the bitwidth fixed to be
         the prescribed value. The truncation process is minimally lossy,
         shifting the data to the left as far as possible before truncation.
         '''
@@ -316,11 +386,13 @@ class FixedPointArray(object):
         int_bitshift = bitwidth - max_bits
         output_fractional_bits = self.fractional_bits + int_bitshift
 
-        int_data = f_round(self.data * 2**int_bitshift)
+        int_data = f_round(self.data * 2 ** int_bitshift)
 
         output = self.__class__(
-            int_data, fractional_bits=output_fractional_bits,
-            data_already_scaled=True)
+                int_data,
+                fractional_bits=output_fractional_bits,
+                data_already_scaled=True
+            )
 
         if output.max_bits > bitwidth:
             # In this case an extra integer bit was created by the
@@ -328,51 +400,73 @@ class FixedPointArray(object):
             int_bitshift -= 1
             output_fractional_bits -= 1
 
-            int_data = f_round(self.data * 2**int_bitshift)
+            int_data = f_round(self.data * 2 ** int_bitshift)
 
             output = self.__class__(
-                int_data, fractional_bits=output_fractional_bits,
-                data_already_scaled=True)
+                int_data,
+                fractional_bits=output_fractional_bits,
+                data_already_scaled=True
+            )
 
         return output
 
     def copy(self):
-
-        return self.__class__(self.data.copy(),
-                              fractional_bits=self.fractional_bits,
-                              data_already_scaled=True)
+        return self.__class__(
+                    self.data.copy(),
+                    fractional_bits=self.fractional_bits,
+                    data_already_scaled=True
+                )
 
     def transpose(self, *axes):
-
-        return self.__class__(self.data.transpose(*axes),
-                              fractional_bits=self.fractional_bits,
-                              data_already_scaled=True)
+        return self.__class__(
+                    self.data.transpose(*axes),
+                    fractional_bits=self.fractional_bits,
+                    data_already_scaled=True
+                )
 
     def conj(self):
-        '''Return the complex conjugate of the array.
+        '''
+        Return the complex conjugate of the array.
         '''
         return self.conjugate()
 
     def conjugate(self):
-        '''Return the complex conjugate of the array.
         '''
-        return self.__class__(self.data.conjugate(),
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        Return the complex conjugate of the array.
+        '''
+        return self.__class__(
+                    self.data.conjugate(),
+                    fractional_bits=self.fractional_bits,
+                    data_already_scaled=True
+                )
 
     def max(self, *args, **kwargs):
-        '''Return the maximum value, equivalent to .max on an ndarray.
         '''
-        return self.as_floating_point().max(*args, **kwargs)
+        Return the maximum value, equivalent to .max on an ndarray.
+        '''
+        return self.__class__(
+                    self.as_floating_point().max(*args, **kwargs),
+                    fractional_bits=self.fractional_bits
+                )
+
+    def min(self, *args, **kwargs):
+        '''
+        Return the minimum value, equivalent to .min on an ndarray.
+        '''
+        return self.__class__(
+                    self.as_floating_point().min(*args, **kwargs),
+                    fractional_bits=self.fractional_bits
+                )
 
     def as_floating_point(self):
-        '''Return the array as a floating point numpy array.
         '''
-        return self.data * 2**(-self.fractional_bits)
+        Return the array as a floating point numpy array.
+        '''
+        return self.data * 2 ** (-self.fractional_bits)
 
     def dot(self, other):
-        '''Take the dot product as per numpy.ndarray.dot().
-
+        '''
+        Take the dot product as per numpy.ndarray.dot().
         To prevent overflow, the number of fractional bits used is the maximum
         of the fractional bits of the two inputs.
         '''
@@ -382,79 +476,95 @@ class FixedPointArray(object):
         output_frac_bits = max(other.fractional_bits, self.fractional_bits)
         scaling_bits = min(other.fractional_bits, self.fractional_bits)
 
-        post_scaling = 2**-scaling_bits
+        post_scaling = 2 ** -scaling_bits
         result = f_round(self.data.dot(other.data) * post_scaling)
 
-        output = self.__class__(result,
-                fractional_bits=output_frac_bits,
-                data_already_scaled=True)
+        output = self.__class__(
+                    result,
+                    fractional_bits=output_frac_bits,
+                    data_already_scaled=True
+                )
 
         return output
 
     def non_truncated_dot(self, other):
-        '''Take the dot product as per numpy.ndarray.dot() but without
+        '''
+        Take the dot product as per numpy.ndarray.dot() but without
         truncating the number of fractional bits of the output. That is, the
         number of fractional bits of the output is the sum of the fractional
         bits of the two inputs.
         '''
-
         if not isinstance(other, FixedPointArray):
-            raise ValueError('Invalid array: the argument should be an array'
-                             ' of type FixedPointArray.')
+            raise ValueError(
+                'Invalid array: \
+                the argument should be an array of type FixedPointArray.'
+            )
 
         output_frac_bits = other.fractional_bits + self.fractional_bits
 
         result = self.data.dot(other.data)
 
-        output = self.__class__(result,
-                fractional_bits=output_frac_bits,
-                data_already_scaled=True)
+        output = self.__class__(
+                    result,
+                    fractional_bits=output_frac_bits,
+                    data_already_scaled=True
+                )
 
         return output
 
     def non_truncated_multiply(self, other):
-        '''Multiply this object with the argument but without truncating the
+        '''
+        Multiply this object with the argument but without truncating the
         number of fractional bits of the output. That is, the number of
         fractional bits of the output is the sum of the fractional bits of the
         two inputs.
         '''
 
         if not isinstance(other, FixedPointArray):
-            raise ValueError('Invalid array: the argument should be an array'
-                             ' of type FixedPointArray.')
+            raise ValueError(
+                'Invalid array: \
+                the argument should be an array of type FixedPointArray.'
+            )
 
         output_frac_bits = other.fractional_bits + self.fractional_bits
 
         result = self.data * other.data
 
-        output = self.__class__(result,
-                fractional_bits=output_frac_bits,
-                data_already_scaled=True)
+        output = self.__class__(
+                    result,
+                    fractional_bits=output_frac_bits,
+                    data_already_scaled=True
+                )
 
         return output
 
     def divide_with_precision(self, other, output_fractional_bits):
-        '''Divide this object by the argument, but with the fractional bits
+        '''
+        Divide this object by the argument, but with the fractional bits
         of the output array set by the output_fractional_bits argument.
         '''
         if not isinstance(other, FixedPointArray):
             raise ValueError('Invalid array: the argument should be an array'
                              ' of type FixedPointArray.')
 
-        scaling_bits = (other.fractional_bits - self.fractional_bits +
-                        output_fractional_bits)
+        scaling_bits = (
+            other.fractional_bits - self.fractional_bits +
+            output_fractional_bits
+        )
 
+        result = f_round((self.data * 2 ** scaling_bits) / other.data)
 
-        result = f_round((self.data * 2**scaling_bits)/other.data)
-
-        output = self.__class__(result,
+        output = self.__class__(
+                result,
                 fractional_bits=output_fractional_bits,
-                data_already_scaled=True)
+                data_already_scaled=True
+            )
 
         return output
 
     def reshape(self, shape):
-        '''Return the array reshaped to ``shape``.
+        '''
+        Return the array reshaped to ``shape``.
         '''
         if sparse.issparse(self.data):
             data = np.array(self.data.todense())
@@ -462,9 +572,11 @@ class FixedPointArray(object):
         else:
             data = self.data
 
-        return self.__class__(data.reshape(shape),
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        return self.__class__(
+            data.reshape(shape),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
 
     def flatten(self):
 
@@ -474,67 +586,311 @@ class FixedPointArray(object):
         else:
             data = self.data
 
-        return self.__class__(data.flatten(),
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        return self.__class__(
+            data.flatten(),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
 
     def ravel(self):
 
         if sparse.issparse(self.data):
             data = np.array(self.data.todense())
+        else:
+            data = self.data
+        return self.__class__(
+            data.ravel(),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
 
+    def squeeze(self, axis=None):
+        '''
+        Remove single-dimensional entries from the shape of an array.
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+        return self.__class__(
+            data.squeeze(),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
+
+    def resize(self, shape):
+        '''
+        Returns the resized FixedPointArray
+        '''
+        self.data.resize(shape)
+        return self
+
+    def max_abs(self):
+        '''
+        Return the maximum of the absolute values of all the values in the
+        array.
+        '''
+        if sparse.issparse(self.data):
+            return self.__class__(
+                np.abs(self.as_floating_point()).data.max(),
+                fractional_bits=self.fractional_bits
+            )
+
+        else:
+            return self.__class__(
+                np.max(np.abs(self.as_floating_point())),
+                fractional_bits=self.fractional_bits
+            )
+
+    def sum_abs(self):
+        '''
+        Return the sum of the absolute values of all the values in the
+        array.
+        '''
+        if sparse.issparse(self.data):
+            return self.__class__(
+                np.abs(self.as_floating_point()).data.sum(),
+                fractional_bits=self.fractional_bits
+            )
+
+        else:
+            return self.__class__(
+                np.sum(np.abs(self.as_floating_point())),
+                fractional_bits=self.fractional_bits
+            )
+
+    def astype(self, *args, **kwargs):
+        '''
+        Returns itself. This is implemented to allow code that depends on
+        astype.
+        '''
+        dtype = np.bool
+        if args[0] == dtype:
+            return type(self)(
+                self.as_floating_point().astype(np.bool),
+                fractional_bits=self.fractional_bits
+            )
+        else:
+            return self
+
+    def log(self, **kwargs):
+        '''
+        Returns log of the fixed point array
+        '''
+        return self.__class__(
+            np.log(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def exp(self, **kwargs):
+        '''
+        Returns exp of the fixed point array
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
         else:
             data = self.data
 
-        return self.__class__(data.ravel(),
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        return self.__class__(
+            np.exp(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
 
-    def max_abs(self):
-        '''Return the maximum of the absolute values of all the values in the
-        array.
+    def square(self, **kwargs):
+        '''
+        Returns square of the fixed point array
         '''
         if sparse.issparse(self.data):
-            return np.abs(self.as_floating_point()).data.max()
-
+            data = np.array(self.data.todense())
         else:
-            return np.max(np.abs(self.as_floating_point()))
+            data = self.data
 
-    def sum_abs(self):
-        '''Return the sum of the absolute values of all the values in the
-        array.
+        return self.__class__(
+            np.square(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def sqrt(self, **kwargs):
+        '''
+        Returns sqrt of the fixed point array
         '''
         if sparse.issparse(self.data):
-            return np.abs(self.as_floating_point()).data.sum()
-
+            data = np.array(self.data.todense())
         else:
-            return np.sum(np.abs(self.as_floating_point()))
+            data = self.data
 
-    def astype(self, *args, **kwargs):
-        '''Returns itself. This is implemented to allow code that depends on
-        astype.
+        return self.__class__(
+            np.sqrt(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def sin(self, **kwargs):
         '''
-        return self
+        Returns sin of the fixed point array
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+
+        return self.__class__(
+            np.sin(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def cos(self, **kwargs):
+        '''
+        Returns cos of the fixed point array
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+
+        return self.__class__(
+            np.cos(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def tan(self, **kwargs):
+        '''
+        Returns tan of the fixed point array
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+
+        return self.__class__(
+            np.tan(self.as_floating_point(), **kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=False
+        )
+
+    def sum(self, **kwargs):
+        '''
+        Returns sum of array elements over a given axis.
+        '''
+
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+
+        return self.__class__(
+            self.data.sum(**kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
+
+    def cumsum(self, **kwargs):
+        '''
+        Returns cumilative sum of array elements over a given axis.
+        '''
+        if sparse.issparse(self.data):
+            data = np.array(self.data.todense())
+        else:
+            data = self.data
+        return self.__class__(
+            self.data.cumsum(**kwargs),
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
+
+    def any(self, **kwargs):
+        '''
+        Test whether any array elements along a given axis evaluates to True.
+        '''
+        return np.any(self.as_floating_point())
+
+    def all(self, **kwargs):
+        '''
+        Test whether all array elements along a given axis evaluates to True.
+        '''
+        return np.all(self.as_floating_point())
+
+    def zeros_like(self, **kwargs):
+        '''
+        Returns an array of zeros like the original FixedPointArray
+        '''
+        return type(self)(
+            np.zeros(self.data.shape),
+            fractional_bits=self.fractional_bits
+        )
+
+    def ones_like(self, **kwargs):
+        '''
+        Returns an array of zeros like the original FixedPointArray
+        '''
+        return type(self)(
+            np.ones(self.data.shape),
+            fractional_bits=self.fractional_bits
+        )
+
+    def append(self, other, **kwargs):
+        '''
+        Appends other to the array
+        '''
+        if not isinstance(other, FixedPointArray):
+            raise ValueError(
+                'Invalid array: \
+                the argument should be an array of type FixedPointArray.'
+            )
+
+        output_frac_bits = kwargs.get(
+                            'fractional_bits',
+                            max(other.fractional_bits, self.fractional_bits)
+                        )
+
+        if self.fractional_bits <= output_frac_bits:
+            data1 = f_round(
+                self.data *
+                2 ** (output_frac_bits - self.fractional_bits)
+            )
+        if other.fractional_bits <= output_frac_bits:
+            data2 = f_round(
+                other.data *
+                2 ** (output_frac_bits - other.fractional_bits)
+            )
+
+        return type(self)(
+            np.append(data1, data2),
+            fractional_bits=output_frac_bits,
+            data_already_scaled=True
+        )
 
     @property
     def real(self):
-        '''The real part of the array.
         '''
-        return  self.__class__(self.data.real,
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        The real part of the array.
+        '''
+        return self.__class__(
+            self.data.real,
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
 
     @property
     def imag(self):
-        '''The imaginary part of the array.
         '''
-        return  self.__class__(self.data.imag,
-                fractional_bits=self.fractional_bits,
-                data_already_scaled=True)
+        The imaginary part of the array.
+        '''
+        return self.__class__(
+            self.data.imag,
+            fractional_bits=self.fractional_bits,
+            data_already_scaled=True
+        )
 
     @property
     def dtype(self):
-        '''Return the dtype of the underlying data. This is useful in that
+        '''
+        Return the dtype of the underlying data. This is useful in that
         allows fixed point object to be used in algorithms designed for
         Numpy that expect such a property. Linear operations and algorithms
         should work fine with fixed point arrays.
@@ -543,9 +899,17 @@ class FixedPointArray(object):
 
     @property
     def shape(self):
-        '''Returns the shape of the array.
+        '''
+        Returns the shape of the array.
         '''
         return self.data.shape
+
+    @property
+    def T(self):
+        '''
+        Returns the shape of the array.
+        '''
+        return self.data.transpose()
 
 
 class SignedFixedPointArray(FixedPointArray):
@@ -602,7 +966,6 @@ class SignedFixedPointArray(FixedPointArray):
 
         if zero_array:
             max_bits = self.fractional_bits
-
         else:
             # always include a sign bit.
             max_bits = self.max_integer_bits + self.fractional_bits + 1

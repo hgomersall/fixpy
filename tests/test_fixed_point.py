@@ -1617,6 +1617,12 @@ class TestFixedPointArray(unittest.TestCase):
                 self.assertTrue(np.all(
                     fixed_ref_fp_a == fixed_fp_cmplx_a.as_floating_point()))
 
+    def test_max(self):
+        '''
+        This method tests FixedPointArray's max() function
+        '''
+        pass
+
 if __name__ == "__main__":
     unittest.main()
 
