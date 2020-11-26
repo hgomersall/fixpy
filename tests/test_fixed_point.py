@@ -626,7 +626,8 @@ class TestFixedPointArray(unittest.TestCase):
         It should work regardless of the number of fractional bits of ``a``
         and ``b``.
 
-        If the arrays are of different size, then False should be returned.
+        If the arrays are of different size, then the same behaviour as numpy
+        should be used (in 1.19 a warning is raised).
         '''
         a = np.random.randn(10) + 1j*np.random.randn(10)
         b = a.copy()
@@ -648,7 +649,8 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue((fp_d == fp_a)[:5]))
         self.assertTrue(np.alltrue(np.logical_not(fp_d == fp_a)[5:]))
 
-        self.assertFalse(fp_a == fp_a[:5])
+        # this test is removed because the behaviour is deprecated in numpy
+        #self.assertFalse(fp_a == fp_a[:5])
 
     def test_equality_with_scalar(self):
         '''We should be able to test equality with a scalar value
@@ -686,7 +688,8 @@ class TestFixedPointArray(unittest.TestCase):
         the same precision as the array and then a boolean numpy array should
         be returned where the values are equal.
 
-        If the arrays are of different size, then False is returned.
+        If the arrays are of different size, then the same behaviour as numpy
+        should be used (in 1.19 a warning is raised).
         '''
         a = np.random.randn(10) + 1j*np.random.randn(10)
         b = a.copy()
@@ -701,7 +704,8 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue((d == fp_a)[:5]))
         self.assertTrue(np.alltrue(np.logical_not(d == fp_a)[5:]))
 
-        self.assertFalse(d[5:] == fp_a)
+        # this test is removed because the behaviour is deprecated in numpy
+        #self.assertFalse(d[5:] == fp_a)
 
     def test_not_equal_with_scalar(self):
         '''We should be able to check we are _not_ equal to a scalar
@@ -736,7 +740,8 @@ class TestFixedPointArray(unittest.TestCase):
         the same precision as the array and then a boolean numpy array should
         be returned where the values are equal.
 
-        If the arrays are of different size, then True is returned.
+        If the arrays are of different size, then the same behaviour as numpy
+        is used (in 1.19 a warning is raised).
         '''
         a = np.random.randn(10) + 1j*np.random.randn(10)
         b = a.copy()
@@ -751,14 +756,17 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue((d != fp_a)[5:]))
         self.assertTrue(np.alltrue(np.logical_not(d != fp_a)[:5]))
 
-        self.assertTrue(d[5:] != fp_a)
+        # this test is removed because the behaviour is deprecated in numpy
+        #self.assertTrue(d[5:] != fp_a)
 
     def test_notequal_check(self):
         '''We should be able to test fixed point arrays are not equal
 
         We should be able to do ``a != b`` and yield False if ``a`` and ``b``
-        contain the same data and True if they contain different data or
-        are different sizes.
+        contain the same data and True if they contain different data.
+
+        If the arrays are of different size, then the same behaviour as numpy
+        should be used (in 1.19 a warning is raised).
         '''
         a = np.random.randn(10) + 1j*np.random.randn(10)
         b = a.copy()
@@ -775,7 +783,8 @@ class TestFixedPointArray(unittest.TestCase):
         self.assertTrue(np.alltrue((fp_d != fp_a)[5:]))
         self.assertTrue(np.alltrue(np.logical_not(fp_d != fp_a)[:5]))
 
-        self.assertTrue(fp_a != fp_a[:5])
+        # this test is removed because the behaviour is deprecated in numpy
+        #self.assertTrue(fp_a != fp_a[:5])
 
     def test_dot_product(self):
         '''There should be a ``dot`` method.
@@ -1454,23 +1463,43 @@ class TestFixedPointArray(unittest.TestCase):
     def test_max_integer_bits(self):
         '''There should be a ``max_integer_bits`` property.
         The ``max_integer_bits`` property should be the maximum number of
-        integer bits needed in order to store the integer part of every
-        value in the array.
+        integer bits needed in order to represent the integer part of every
+        value in the array, ignoring the number of fractional bits (even
+        if the number of fractional bits is negative).
         '''
-        frac_bits = 5
 
-        for scale_power in (1, 2, 3, 4, 5, 6):
+        # test set is (min val, max val, fractional bits, max integer bits)
+        test_set = (
+            (-5, 5, 1, 3),
+            (-4, 5, 1, 3),
+            (-4, 4, 1, 3),
+            (-4, 3, 1, 2), # -4 needs 2 bits + sign bit
+            (-5, 3, 1, 3),
+            (-0.6, 0, 0, 0), # The wierd case in which -1 needs no integer bits
+            (-0.6, 0.6, 0, 1), # But the positive integer does (0.6 rounded)
+            (0, 0, 0, 0),
+            (0, 2, 0, 2),
+            (1.8, 1.8, 0, 2),
+            (-1.8, 1.8, 0, 2),
+            (-3, 3, 1, 2),
+            (-5, 5, -1, 3),
+            (-5, 5, -2, 3),
+            (-5, 5, -3, 4), # rounds to -8 and 8 (round to even)
+            (-4, 0, -3, 0), # rounds to zero
+            (0, 4, -3, 0), # rounds to zero
+        )
 
-            a = np.ones(20) * 2**scale_power + 0j
-            b = 0 + np.ones(20) * 2**scale_power * 1j
+        for min_val, max_val, frac_bits, expected_integer_bits in test_set:
+            a = self.fp_class([min_val, max_val], fractional_bits=frac_bits)
+            self.assertEqual(expected_integer_bits, a.max_integer_bits)
 
-            fp_a = self.fp_class(a, frac_bits)
-            fp_b = self.fp_class(b, frac_bits)
+            a = self.fp_class(
+                [min_val*1j, max_val*1j], fractional_bits=frac_bits)
+            self.assertEqual(expected_integer_bits, a.max_integer_bits)
 
-            self.assertTrue(fp_a.max_integer_bits == scale_power + 1)
-            self.assertTrue((fp_a - 1).max_integer_bits == scale_power)
-            self.assertTrue(fp_b.max_integer_bits == scale_power + 1)
-            self.assertTrue((fp_b - 1j).max_integer_bits == scale_power)
+            a = self.fp_class(
+                [min_val*(1+1j), max_val*(1+1j)], fractional_bits=frac_bits)
+            self.assertEqual(expected_integer_bits, a.max_integer_bits)
 
     def test_max_bits(self):
         '''There should be a ``max_bits`` property.
@@ -1486,78 +1515,79 @@ class TestFixedPointArray(unittest.TestCase):
         the fractional bits. This is because zero is always to a certain
         precision.
         '''
-        for frac_bits in (-5, -3, -1, 0, 4, 7, 10, 15):
-            for scale_power in (1, 2, 3, 4, 5, 6, 7, 8):
 
-                a = np.ones(20) * 2**scale_power + np.ones(20)*1j
-                neg_a = -np.ones(20) * 2**scale_power + np.ones(20)*1j
-                b = np.ones(20) + np.ones(20) * 2**scale_power * 1j
-                neg_b = np.ones(20) - np.ones(20) * 2**scale_power * 1j
+        # test set is (min val, max val, fractional bits, max bits)
+        test_set = (
+            (-5, 5, 1, 5),
+            (-4, 5, 1, 5),
+            (-4, 4, 1, 5),
+            (-4, 3, 1, 4), # -4 needs 2 bits + sign bit
+            (-5, 3, 1, 5),
+            (-0.6, 0, 0, 1), # The wierd case in which -1 needs no integer bits
+            (-0.6, 0.6, 0, 2), # But the positive integer does (0.6 rounded)
+            (0, 0, 0, 0),
+            (0, 2, 0, 2),
+            (1.8, 1.8, 0, 2),
+            (-1.8, 1.8, 0, 3),
+            (-3, 3, 1, 4),
+            (-5, 5, -1, 3),
+            (-5, 5, -2, 2),
+            (-5, 5, -3, 2), # rounds to -8 and 8 (round to even)
+            (-5, 0, -3, 1), # -8 needs only 1 bit!
+            (-4, 0, -3, 0), # rounds to zero
+            (0, 4, -3, 0), # rounds to zero
+        )
 
-                fp_a = self.fp_class(a, frac_bits)
-                fp_neg_a = self.fp_class(neg_a, frac_bits)
-                fp_b = self.fp_class(b, frac_bits)
-                fp_neg_b = self.fp_class(neg_b, frac_bits)
+        for min_val, max_val, frac_bits, expected_max_bits in test_set:
+            a = self.fp_class([min_val, max_val], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
-                if -frac_bits > scale_power:
-                    self.assertTrue(fp_a.max_bits == frac_bits)
-                    self.assertTrue(fp_b.max_bits == frac_bits)
-                    continue
+            a = self.fp_class(
+                [min_val*1j, max_val*1j], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
-                self.assertTrue(
-                    fp_a.max_bits == frac_bits + scale_power + 1)
-                self.assertTrue(
-                    (fp_neg_a).max_bits == frac_bits + scale_power + 2)
-
-                self.assertTrue(
-                    fp_b.max_bits == frac_bits + scale_power + 1)
-                self.assertTrue(
-                    (fp_neg_b).max_bits == frac_bits + scale_power + 2)
-
-                if -frac_bits != scale_power:
-                    if frac_bits < 0:
-                        int_power = -frac_bits
-                    else:
-                        int_power = 0
-
-                    self.assertTrue(
-                        (fp_a - 2**int_power).max_bits ==
-                        frac_bits + scale_power)
-
-                    self.assertTrue(
-                        (fp_b - 2**int_power*1j).max_bits ==
-                        frac_bits + scale_power)
+            a = self.fp_class(
+                [min_val*(1+1j), max_val*(1+1j)], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
     def test_sparse_max_bits(self):
         '''The max bits property should work for sparse arrays.
         '''
 
-        frac_bits = 7
-        scale_power = 4
+        # test set is (min val, max val, fractional bits, max bits)
+        test_set = (
+            (-5, 5, 1, 5),
+            (-4, 5, 1, 5),
+            (-4, 4, 1, 5),
+            (-4, 3, 1, 4), # -4 needs 2 bits + sign bit
+            (-5, 3, 1, 5),
+            (-0.6, 0, 0, 1), # The wierd case in which -1 needs no integer bits
+            (-0.6, 0.6, 0, 2), # But the positive integer does (0.6 rounded)
+            (0, 0, 0, 0),
+            (0, 2, 0, 2),
+            (1.8, 1.8, 0, 2),
+            (-1.8, 1.8, 0, 3),
+            (-3, 3, 1, 4),
+            (-5, 5, -1, 3),
+            (-5, 5, -2, 2),
+            (-5, 5, -3, 2), # rounds to -8 and 8 (round to even)
+            (-5, 0, -3, 1), # -8 needs only 1 bit!
+            (-4, 0, -3, 0), # rounds to zero
+            (0, 4, -3, 0), # rounds to zero
+        )
 
-        a = sparse.csc_matrix(
-            np.ones(20) * 2**scale_power + np.ones(20)*1j)
-        neg_a = sparse.csc_matrix(
-            -np.ones(20) * 2**scale_power + np.ones(20)*1j)
-        b = sparse.csc_matrix(
-            np.ones(20) + np.ones(20) * 2**scale_power * 1j)
-        neg_b = sparse.csc_matrix(
-            np.ones(20) - np.ones(20) * 2**scale_power * 1j)
+        for min_val, max_val, frac_bits, expected_max_bits in test_set:
+            a = sparse.csc_matrix(np.array([min_val, max_val]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
-        fp_a = self.fp_class(a, frac_bits)
-        fp_neg_a = self.fp_class(neg_a, frac_bits)
-        fp_b = self.fp_class(b, frac_bits)
-        fp_neg_b = self.fp_class(neg_b, frac_bits)
+            a = sparse.csc_matrix(np.array([min_val*1j, max_val*1j]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
-        self.assertTrue(
-            fp_a.max_bits == frac_bits + scale_power + 1)
-        self.assertTrue(
-            (fp_neg_a).max_bits == frac_bits + scale_power + 2)
-
-        self.assertTrue(
-            fp_b.max_bits == frac_bits + scale_power + 1)
-        self.assertTrue(
-            (fp_neg_b).max_bits == frac_bits + scale_power + 2)
+            a = sparse.csc_matrix(np.array([min_val*(1+1j), max_val*(1+1j)]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
     def test_fix_to_bitwidth(self):
         '''There should be a method to fix an array to some bitwidth
@@ -1577,7 +1607,6 @@ class TestFixedPointArray(unittest.TestCase):
 
         for scale_bits in (0, 5, 10, 20):
             for frac_bits in (-5, -3, -1, 0, 4, 7, 10, 15):
-
                 test_a = cmplx_a * 2**scale_bits
                 fp_cmplx_a = self.fp_class(test_a, frac_bits)
 
@@ -1614,6 +1643,7 @@ class TestFixedPointArray(unittest.TestCase):
                                   2**(-(frac_bits + extra_bits)))
 
                 self.assertEqual(fixed_fp_cmplx_a.max_bits, max_bits)
+
                 self.assertTrue(np.all(
                     fixed_ref_fp_a == fixed_fp_cmplx_a.as_floating_point()))
 
@@ -1631,40 +1661,6 @@ class TestSignedFixedPointArray(TestFixedPointArray):
 
         self.fp_class = SignedFixedPointArray
 
-    def test_max_integer_bits(self):
-        '''There should be a ``max_integer_bits`` property.
-        The ``max_integer_bits`` property should be the maximum number of
-        integer bits needed in order to store the integer part of every
-        value in the array.
-        '''
-
-        super(TestSignedFixedPointArray, self).test_max_integer_bits()
-
-        # we also test the special case of having -2**n, in which case we
-        # actually need 1 fewer integer bits than the positive case (since
-        # the signed range is [-2**n, 2**n), with the inclusive lower bound
-        # defined by only the sign bit being high).
-
-        frac_bits = 5
-
-        for scale_power in (1, 2, 3, 4, 5, 6):
-            a = -np.ones(20) * 2**scale_power
-            b = 0 - np.ones(20) * 2**scale_power * 1j
-
-            a = a - 0.004
-            fp_a = self.fp_class(a, frac_bits)
-            fp_b = self.fp_class(b, frac_bits)
-
-            smallest_frac = 2**-(frac_bits - 1)
-
-            self.assertTrue(fp_a.max_integer_bits == scale_power)
-            self.assertTrue((fp_a - smallest_frac).max_integer_bits == (
-                scale_power + 1))
-            self.assertTrue(fp_b.max_integer_bits == scale_power)
-            self.assertTrue((fp_b - smallest_frac * 1j).max_integer_bits == (
-                scale_power + 1))
-
-
     def test_max_bits(self):
         '''There should be a ``max_bits`` property.
         The ``max_bits`` property should be the number of bits required to
@@ -1679,78 +1675,77 @@ class TestSignedFixedPointArray(TestFixedPointArray):
         the fractional bits (and, of course, the sign bit). This is because
         zero is always to a certain precision.
         '''
-        for frac_bits in (-5, -3, -1, 0, 4, 7, 10, 15):
-            for scale_power in (1, 2, 3, 4, 5, 6, 7, 8):
 
-                a = np.ones(20) * 2**scale_power + np.ones(20)*1j
-                neg_a = -np.ones(20) * 2**scale_power + np.ones(20)*1j
-                b = np.ones(20) + np.ones(20) * 2**scale_power * 1j
-                neg_b = np.ones(20) - np.ones(20) * 2**scale_power * 1j
+        # test set is (min val, max val, fractional bits, max bits)
+        test_set = (
+            (-5, 5, 1, 5),
+            (-4, 5, 1, 5),
+            (-4, 4, 1, 5),
+            (-4, 3, 1, 4), # -4 needs 2 bits + sign bit
+            (-5, 3, 1, 5),
+            (-0.6, 0, 0, 1), # The wierd case in which -1 needs no integer bits
+            (-0.6, 0.6, 0, 2), # But the positive integer does (0.6 rounded)
+            (0, 0, 0, 1),
+            (0, 2, 0, 3),
+            (1.8, 1.8, 0, 3),
+            (-1.8, 1.8, 0, 3),
+            (-3, 3, 1, 4),
+            (-5, 5, -1, 3),
+            (-5, 5, -2, 2),
+            (-5, 5, -3, 2), # rounds to -8 and 8 (round to even)
+            (-5, 0, -3, 1), # -8 needs only 1 bit!
+            (-4, 0, -3, 1), # rounds to zero
+            (0, 4, -3, 1), # rounds to zero
+        )
 
-                fp_a = self.fp_class(a, frac_bits)
-                fp_neg_a = self.fp_class(neg_a, frac_bits)
-                fp_b = self.fp_class(b, frac_bits)
-                fp_neg_b = self.fp_class(neg_b, frac_bits)
+        for min_val, max_val, frac_bits, expected_max_bits in test_set:
+            a = self.fp_class([min_val, max_val], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
-                if -frac_bits > scale_power:
-                    self.assertTrue(fp_a.max_bits == frac_bits)
-                    self.assertTrue(fp_b.max_bits == frac_bits)
-                    continue
+            a = self.fp_class(
+                [min_val*1j, max_val*1j], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
-                # We always have a sign bit now.
-                self.assertTrue(
-                    fp_a.max_bits == frac_bits + scale_power + 2)
-                # but we need one less bit here
-                self.assertTrue(
-                    (fp_neg_a).max_bits == frac_bits + scale_power + 1)
-
-                self.assertTrue(
-                    fp_b.max_bits == frac_bits + scale_power + 2)
-                self.assertTrue(
-                    (fp_neg_b).max_bits == frac_bits + scale_power + 1)
-
-                if -frac_bits != scale_power:
-                    if frac_bits < 0:
-                        int_power = -frac_bits
-                    else:
-                        int_power = 0
-
-                    # Always include the sign bit
-                    self.assertTrue(
-                        (fp_a - 2**int_power).max_bits ==
-                        frac_bits + scale_power + 1)
-
-                    self.assertTrue(
-                        (fp_b - 2**int_power*1j).max_bits ==
-                        frac_bits + scale_power + 1)
+            a = self.fp_class(
+                [min_val*(1+1j), max_val*(1+1j)], fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, a.max_bits)
 
     def test_sparse_max_bits(self):
         '''The max bits property should work for sparse arrays.
         '''
 
-        frac_bits = 7
-        scale_power = 4
+        # test set is (min val, max val, fractional bits, max bits)
+        test_set = (
+            (-5, 5, 1, 5),
+            (-4, 5, 1, 5),
+            (-4, 4, 1, 5),
+            (-4, 3, 1, 4), # -4 needs 2 bits + sign bit
+            (-5, 3, 1, 5),
+            (-0.6, 0, 0, 1), # The wierd case in which -1 needs no integer bits
+            (-0.6, 0.6, 0, 2), # But the positive integer does (0.6 rounded)
+            (0, 0, 0, 1),
+            (0, 2, 0, 3),
+            (1.8, 1.8, 0, 3),
+            (-1.8, 1.8, 0, 3),
+            (-3, 3, 1, 4),
+            (-5, 5, -1, 3),
+            (-5, 5, -2, 2),
+            (-5, 5, -3, 2), # rounds to -8 and 8 (round to even)
+            (-5, 0, -3, 1), # -8 needs only 1 bit!
+            (-4, 0, -3, 1), # rounds to zero
+            (0, 4, -3, 1), # rounds to zero
+        )
 
-        a = sparse.csc_matrix(
-            np.ones(20) * 2**scale_power + np.ones(20)*1j)
-        neg_a = sparse.csc_matrix(
-            -np.ones(20) * 2**scale_power + np.ones(20)*1j)
-        b = sparse.csc_matrix(
-            np.ones(20) + np.ones(20) * 2**scale_power * 1j)
-        neg_b = sparse.csc_matrix(
-            np.ones(20) - np.ones(20) * 2**scale_power * 1j)
+        for min_val, max_val, frac_bits, expected_max_bits in test_set:
+            a = sparse.csc_matrix(np.array([min_val, max_val]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
-        fp_a = self.fp_class(a, frac_bits)
-        fp_neg_a = self.fp_class(neg_a, frac_bits)
-        fp_b = self.fp_class(b, frac_bits)
-        fp_neg_b = self.fp_class(neg_b, frac_bits)
+            a = sparse.csc_matrix(np.array([min_val*1j, max_val*1j]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
-        self.assertTrue(
-            fp_a.max_bits == frac_bits + scale_power + 2)
-        self.assertTrue(
-            (fp_neg_a).max_bits == frac_bits + scale_power + 1)
+            a = sparse.csc_matrix(np.array([min_val*(1+1j), max_val*(1+1j)]))
+            fp_a = self.fp_class(a, fractional_bits=frac_bits)
+            self.assertEqual(expected_max_bits, fp_a.max_bits)
 
-        self.assertTrue(
-            fp_b.max_bits == frac_bits + scale_power + 2)
-        self.assertTrue(
-            (fp_neg_b).max_bits == frac_bits + scale_power + 1)

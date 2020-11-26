@@ -15,7 +15,17 @@ except ImportError:
 
 import math
 
+# np.round is round half to even.
 f_round = np.round
+
+def has_negative_part(array):
+    real_neg = array.real < 0.0
+    imag_neg = array.imag < 0.0
+
+    try:
+        return (real_neg.getnnz() + imag_neg.getnnz()) > 0
+    except AttributeError:
+        return np.any(real_neg) or np.any(imag_neg)
 
 class FixedPointArray(object):
 
@@ -75,7 +85,9 @@ class FixedPointArray(object):
             # The following returns true for data containing fractional parts.
             # It is robust to complex data and to sparse arrays (not many
             # solutions are!).
-            if len(np.atleast_1d(f_round(data) - data).nonzero()[0]) != 0:
+            test_array = f_round(data) - data
+            if (test_array.ndim > 0 and
+                len((f_round(data) - data).nonzero()[0]) != 0):
                 raise ValueError('When data_already_scaled is set to True, '
                                  'the data should have zero fractional part. '
                                  'i.e. it should be all integers (though not '
@@ -87,20 +99,45 @@ class FixedPointArray(object):
         self.storage_type = storage_type
 
     @property
+    def is_signed(self):
+        return has_negative_part(self.data)
+
+    @property
     def max_integer_bits(self):
-        '''Returns the maximum number of bits needed to encode the integer
-        part of data (based on the largest single value in the array).
+        '''Returns the maximum number of bits needed to represent the integer
+        part of data (based on the largest single value in the array), assuming
+        the data can take any value down to zero.
+
+        In the case in which the number of fractional bits is negative,
+        `max_integer_bits` will be larger than the number of bits needed to
+        store the data.
         '''
-        max_val = max(
-                np.abs(self.data.real).max(),
-                np.abs(self.data.imag).max())
+        max_data_val = max(self.data.real.max(), self.data.imag.max())
+        min_data_val = min(self.data.real.min(), self.data.imag.min())
 
-        max_int = math.floor(max_val * 2**-self.fractional_bits)
+        max_int = math.floor(max_data_val * 2**-self.fractional_bits)
 
-        if max_int > 0:
-            max_integer_bits = int(math.floor(math.log(max_int, 2)) + 1)
+        min_val = min_data_val * 2**-self.fractional_bits
+        if min_val > 0:
+            min_val = 0
+
+        min_int = math.ceil(min_val)
+        if abs(min_int) > abs(max_int):
+            # The maximum absolute value is negative
+            if min_int < 0:
+                max_integer_bits = int(math.ceil(math.log(abs(min_int), 2)))
+            else:
+                max_integer_bits = 0
+
         else:
-            max_integer_bits = 0
+            # The maximum absolute value is positive or they are the same.
+            # In the case they are the same, the positive value needs the
+            # same, or one more bit if the value = 2**N for some integer N.
+            # (that is, -2**N needs N bits, 2**N needs N+1 bits).
+            if max_int > 0:
+                max_integer_bits = int(math.floor(math.log(max_int, 2)) + 1)
+            else:
+                max_integer_bits = 0
 
         return max_integer_bits
 
@@ -113,26 +150,21 @@ class FixedPointArray(object):
 
         try:
             # For the sparse matrix
-            zero_array = (self.data.getnnz() == 0)
+            zero_array = (self.data.count_nonzero() == 0)
         except AttributeError:
             zero_array = np.all(self.data == 0.0)
 
-        def has_negative_part(array):
-            real_neg = array.real < 0.0
-            imag_neg = array.imag < 0.0
-
-            try:
-                return (real_neg.getnnz() + imag_neg.getnnz()) > 0
-            except AttributeError:
-                return np.any(real_neg) or np.any(imag_neg)
-
         if zero_array:
-            max_bits = self.fractional_bits
-        elif has_negative_part(self.data):
-            # We have negative values
-            max_bits = self.max_integer_bits + self.fractional_bits + 1
+            if self.fractional_bits > 0:
+                max_bits = self.fractional_bits
+            else:
+                max_bits = 0
         else:
             max_bits = self.max_integer_bits + self.fractional_bits
+
+        if self.is_signed:
+            # We have negative values
+            max_bits += 1
 
         return max_bits
 
@@ -299,10 +331,16 @@ class FixedPointArray(object):
 
     def __repr__(self):
 
-        repr_string = '<Q%d.%d fixed point array>(\n%s)' % (
-            self.max_integer_bits,
-            self.fractional_bits,
-            self.as_floating_point().__str__())
+        if self.is_signed:
+            repr_string = '<Q%d.%d signed fixed point array>(\n%s)' % (
+                self.max_integer_bits,
+                self.fractional_bits,
+                self.as_floating_point().__str__())
+        else:
+            repr_string = '<Q%d.%d fixed point array>(\n%s)' % (
+                self.max_integer_bits,
+                self.fractional_bits,
+                self.as_floating_point().__str__())
 
         return repr_string
 
@@ -314,7 +352,13 @@ class FixedPointArray(object):
         max_bits = self.max_bits
 
         int_bitshift = bitwidth - max_bits
-        output_fractional_bits = self.fractional_bits + int_bitshift
+
+        if self.fractional_bits < 0 and self.max_integer_bits == 0:
+            # The special case in which the integer part is empty and there
+            # is no actual fraction (fractional_bits is negative)
+            output_fractional_bits = int_bitshift
+        else:
+            output_fractional_bits = self.fractional_bits + int_bitshift
 
         int_data = f_round(self.data * 2**int_bitshift)
 
@@ -551,60 +595,6 @@ class FixedPointArray(object):
 class SignedFixedPointArray(FixedPointArray):
 
     @property
-    def max_integer_bits(self):
-        '''Returns the maximum number of bits needed to encode the integer
-        part of data (based on the largest single value in the array).
-        '''
-        max_data_val = max(self.data.real.max(), self.data.imag.max())
-        min_data_val = min(self.data.real.min(), self.data.imag.min())
+    def is_signed(self):
+        return True
 
-        max_int = math.floor(max_data_val * 2**-self.fractional_bits)
-
-        min_val = min_data_val * 2**-self.fractional_bits
-        if min_val > 0:
-            min_val = 0
-
-        min_int = math.ceil(min_val)
-
-        if abs(min_int) > abs(max_int):
-            if min_int < 0:
-                if min_int == min_val:
-                    # This captures the special case of -2**n needing only
-                    # n bits
-                    max_integer_bits = (
-                        int(math.floor(math.log(abs(min_int), 2))))
-                else:
-                    max_integer_bits = int(
-                        math.floor(math.log(abs(min_int), 2)) + 1)
-            else:
-                max_integer_bits = 0
-
-        else:
-            if max_int > 0:
-                max_integer_bits = int(math.floor(math.log(max_int, 2)) + 1)
-            else:
-                max_integer_bits = 0
-
-        return max_integer_bits
-
-    @property
-    def max_bits(self):
-        '''Returns the maximum number of bits needed to encode all the digits
-        in the data structure with the desired precision, always including a
-        sign bit.
-        '''
-
-        try:
-            # For the sparse matrix
-            zero_array = (self.data.getnnz() == 0)
-        except AttributeError:
-            zero_array = np.all(self.data == 0.0)
-
-        if zero_array:
-            max_bits = self.fractional_bits
-
-        else:
-            # always include a sign bit.
-            max_bits = self.max_integer_bits + self.fractional_bits + 1
-
-        return max_bits
