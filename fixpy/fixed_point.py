@@ -93,7 +93,7 @@ class FixedPointArray(object):
                                  'i.e. it should be all integers (though not '
                                  'necessarily an integer type).')
 
-            self.data = data
+            self.data = data.astype(storage_type)
 
         self.fractional_bits = fractional_bits
         self.storage_type = storage_type
