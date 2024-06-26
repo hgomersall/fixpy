@@ -1,0 +1,18 @@
+[project]
+name = "fixpy"
+version = "0.2.1"
+description = "A numpy-like array class for fixed point algorithm design"
+authors = [
+    {name = "Henry Gomersall", email = "henry.gomersall@smartacoustics.co.uk"},
+]
+dependencies = [
+    "numpy~=1.26.1",
+    "scipy~=1.11.3",
+]
+requires-python = "~=3.10.12"
+readme = "README.md"
+license = {text = "GPL"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
