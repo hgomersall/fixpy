@@ -1,15 +1,15 @@
 [project]
 name = "fixpy"
-version = "0.2.1"
+version = "0.3.0"
 description = "A numpy-like array class for fixed point algorithm design"
 authors = [
     {name = "Henry Gomersall", email = "henry.gomersall@smartacoustics.co.uk"},
 ]
 dependencies = [
-    "numpy~=1.26.1",
-    "scipy~=1.11.3",
+    "numpy~=1.26",
+    "scipy~=1.11",
 ]
-requires-python = "~=3.10.12"
+requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "GPL"}
 

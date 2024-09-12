@@ -307,7 +307,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_array = self.fp_class(test_array, frac_bits)
 
-        self.assertTrue(np.alltrue(-fp_array == -rounded_array))
+        self.assertTrue(np.all(-fp_array == -rounded_array))
 
 
     def test_mul(self):
@@ -342,7 +342,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a * each_fp_b
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
             self.assertTrue(result.fractional_bits == output_frac_bits)
 
@@ -382,7 +382,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a + each_fp_b
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
             self.assertTrue(result.fractional_bits == output_frac_bits)
 
@@ -421,7 +421,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a - each_fp_b
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
             self.assertTrue(result.fractional_bits == output_frac_bits)
 
@@ -464,11 +464,11 @@ class TestFixedPointArray(unittest.TestCase):
             lsub_scalar_result = each_fp_a - scalar
 
             self.assertTrue(
-                np.alltrue(lsub_result.as_floating_point() ==
+                np.all(lsub_result.as_floating_point() ==
                            lsub_ref_result))
 
             self.assertTrue(
-                np.alltrue(lsub_scalar_result.as_floating_point() ==
+                np.all(lsub_scalar_result.as_floating_point() ==
                            lsub_scalar_ref_result))
 
     def test_non_fixed_point_right_diff(self):
@@ -512,11 +512,11 @@ class TestFixedPointArray(unittest.TestCase):
             rsub_scalar_result = scalar - each_fp_a
 
             self.assertTrue(
-                np.alltrue(rsub_result.as_floating_point() ==
+                np.all(rsub_result.as_floating_point() ==
                            rsub_ref_result))
 
             self.assertTrue(
-                np.alltrue(rsub_scalar_result.as_floating_point() ==
+                np.all(rsub_scalar_result.as_floating_point() ==
                            rsub_scalar_ref_result))
 
     def test_divide(self):
@@ -559,7 +559,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a/each_fp_b
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_scalar_denominator_divide(self):
         '''We should be able to divide a fixed point array by a python scalar
@@ -587,7 +587,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = fp_a/scalar
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_scalar_numerator_divide(self):
         '''We should be able to divide a python scalar by a fixed point array
@@ -614,7 +614,7 @@ class TestFixedPointArray(unittest.TestCase):
 
             result = scalar/fp_a
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_equality_check(self):
         '''We should be able to test equality with a fixed point array
@@ -635,19 +635,19 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a = self.fp_class(a, fractional_bits=10)
         fp_b = self.fp_class(b, fractional_bits=10)
 
-        self.assertTrue(np.alltrue(fp_a == fp_b))
+        self.assertTrue(np.all(fp_a == fp_b))
 
         fp_c = self.fp_class(fp_b.as_floating_point(),
                                fractional_bits = 12)
 
-        self.assertTrue(np.alltrue(fp_a == fp_c))
+        self.assertTrue(np.all(fp_a == fp_c))
 
         d = a.copy()
         d[5:] = -d[5:]
         fp_d = self.fp_class(d, fractional_bits=10)
 
-        self.assertTrue(np.alltrue((fp_d == fp_a)[:5]))
-        self.assertTrue(np.alltrue(np.logical_not(fp_d == fp_a)[5:]))
+        self.assertTrue(np.all((fp_d == fp_a)[:5]))
+        self.assertTrue(np.all(np.logical_not(fp_d == fp_a)[5:]))
 
         # this test is removed because the behaviour is deprecated in numpy
         #self.assertFalse(fp_a == fp_a[:5])
@@ -661,7 +661,7 @@ class TestFixedPointArray(unittest.TestCase):
         and then a boolean numpy array should be returned where values
         are equal.
         '''
-        scalar = complex(np.random.rand(1), np.random.rand(1))
+        scalar = complex(np.random.rand(1)[0], np.random.rand(1)[0])
         a = np.ones(10) * scalar
 
         frac_bits = 4
@@ -670,14 +670,14 @@ class TestFixedPointArray(unittest.TestCase):
 
         scaled_scalar = scalar * 2**frac_bits
 
-        self.assertTrue(np.alltrue(fp_a == scalar))
+        self.assertTrue(np.all(fp_a == scalar))
 
         b = a.copy()
         b[5:] = -b[5:]
         fp_b = self.fp_class(b, fractional_bits=frac_bits)
 
-        self.assertTrue(np.alltrue((fp_b == scalar)[:5]))
-        self.assertTrue(np.alltrue(np.logical_not(fp_b == scalar)[5:]))
+        self.assertTrue(np.all((fp_b == scalar)[:5]))
+        self.assertTrue(np.all(np.logical_not(fp_b == scalar)[5:]))
 
     def test_equality_with_np_array(self):
         '''We should be able to test equality with a numpy array
@@ -696,13 +696,13 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_a = self.fp_class(a, fractional_bits=10)
 
-        self.assertTrue(np.alltrue(fp_a == b))
+        self.assertTrue(np.all(fp_a == b))
 
         d = a.copy()
         d[5:] = -d[5:]
 
-        self.assertTrue(np.alltrue((d == fp_a)[:5]))
-        self.assertTrue(np.alltrue(np.logical_not(d == fp_a)[5:]))
+        self.assertTrue(np.all((d == fp_a)[:5]))
+        self.assertTrue(np.all(np.logical_not(d == fp_a)[5:]))
 
         # this test is removed because the behaviour is deprecated in numpy
         #self.assertFalse(d[5:] == fp_a)
@@ -713,7 +713,7 @@ class TestFixedPointArray(unittest.TestCase):
         As with the check to see if we are equal, we should be able to check
         that we are not equal.
         '''
-        scalar = complex(np.random.rand(1), np.random.rand(1))
+        scalar = complex(np.random.rand(1)[0], np.random.rand(1)[0])
         a = np.ones(10) * scalar
 
         frac_bits = 4
@@ -722,14 +722,14 @@ class TestFixedPointArray(unittest.TestCase):
 
         scaled_scalar = scalar * 2**frac_bits
 
-        self.assertTrue(np.alltrue(np.logical_not(fp_a != scalar)))
+        self.assertTrue(np.all(np.logical_not(fp_a != scalar)))
 
         b = a.copy()
         b[5:] = -b[5:]
         fp_b = self.fp_class(b, fractional_bits=frac_bits)
 
-        self.assertTrue(np.alltrue((fp_b != scalar)[5:]))
-        self.assertTrue(np.alltrue(np.logical_not(fp_b != scalar)[:5]))
+        self.assertTrue(np.all((fp_b != scalar)[5:]))
+        self.assertTrue(np.all(np.logical_not(fp_b != scalar)[:5]))
 
     def test_not_equal_with_np_array(self):
         '''We should be able to test not equals with a numpy array
@@ -748,13 +748,13 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_a = self.fp_class(a, fractional_bits=10)
 
-        self.assertTrue(np.alltrue(np.logical_not(fp_a != b)))
+        self.assertTrue(np.all(np.logical_not(fp_a != b)))
 
         d = a.copy()
         d[5:] = -d[5:]
 
-        self.assertTrue(np.alltrue((d != fp_a)[5:]))
-        self.assertTrue(np.alltrue(np.logical_not(d != fp_a)[:5]))
+        self.assertTrue(np.all((d != fp_a)[5:]))
+        self.assertTrue(np.all(np.logical_not(d != fp_a)[:5]))
 
         # this test is removed because the behaviour is deprecated in numpy
         #self.assertTrue(d[5:] != fp_a)
@@ -774,14 +774,14 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a = self.fp_class(a, fractional_bits=10)
         fp_b = self.fp_class(b, fractional_bits=10)
 
-        self.assertTrue(np.alltrue(np.logical_not(fp_a != fp_b)))
+        self.assertTrue(np.all(np.logical_not(fp_a != fp_b)))
 
         d = a.copy()
         d[5:] = -d[5:]
         fp_d = self.fp_class(d, fractional_bits=10)
 
-        self.assertTrue(np.alltrue((fp_d != fp_a)[5:]))
-        self.assertTrue(np.alltrue(np.logical_not(fp_d != fp_a)[:5]))
+        self.assertTrue(np.all((fp_d != fp_a)[5:]))
+        self.assertTrue(np.all(np.logical_not(fp_d != fp_a)[:5]))
 
         # this test is removed because the behaviour is deprecated in numpy
         #self.assertTrue(fp_a != fp_a[:5])
@@ -819,7 +819,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a.dot(each_fp_b)
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_non_fixed_point_array_dot_product(self):
         '''The``dot`` method should handle non fixed point arrays.
@@ -848,7 +848,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a.dot(each_b)
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_non_truncated_dot_product(self):
         '''There should be a ``non_truncated_dot`` method.
@@ -880,7 +880,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a.non_truncated_dot(each_fp_b)
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
     def test_non_truncated_dot_non_fp_fail(self):
         '''The non_truncated_dot method should only accept a FixedPointArray
@@ -933,7 +933,7 @@ class TestFixedPointArray(unittest.TestCase):
             result = each_fp_a.non_truncated_multiply(each_fp_b)
 
             self.assertTrue(
-                np.alltrue(result.as_floating_point() == ref_result))
+                np.all(result.as_floating_point() == ref_result))
 
 
     def test_non_truncated_multiply_non_fp_fail(self):
@@ -1016,7 +1016,7 @@ class TestFixedPointArray(unittest.TestCase):
                                                     output_frac_bits)
 
                 self.assertTrue(
-                    np.alltrue(result.as_floating_point() == ref_result))
+                    np.all(result.as_floating_point() == ref_result))
 
 
     def test_divide_with_precision_non_fp_fail(self):
@@ -1052,7 +1052,7 @@ class TestFixedPointArray(unittest.TestCase):
         a_slice = f_round(a[:5] * 2**fractional_bits) * 2**-fractional_bits
 
         self.assertTrue(isinstance(fp_a_slice, self.fp_class))
-        self.assertTrue(np.alltrue(a_slice == fp_a_slice.as_floating_point()))
+        self.assertTrue(np.all(a_slice == fp_a_slice.as_floating_point()))
 
     def test_slice_setting(self):
         '''We should be able to set values with a slice.
@@ -1070,7 +1070,7 @@ class TestFixedPointArray(unittest.TestCase):
         fractional_bits = fp_b.fractional_bits
 
         _b = f_round(b * 2**fractional_bits) * 2**-fractional_bits
-        self.assertTrue(np.alltrue(_b == fp_b.as_floating_point()))
+        self.assertTrue(np.all(_b == fp_b.as_floating_point()))
 
     def _get_sparse_arrays(self):
 
@@ -1099,7 +1099,7 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # basic
-        self.assertTrue(np.alltrue(fp_a.as_floating_point() ==
+        self.assertTrue(np.all(fp_a.as_floating_point() ==
                                    fp_sparse_a.as_floating_point()))
 
         self.assertTrue(sparse.issparse(fp_sparse_a.data))
@@ -1112,7 +1112,7 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # multiplication
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             (fp_a * fp_b).as_floating_point() ==
             (fp_sparse_a * fp_sparse_b).as_floating_point()))
 
@@ -1123,7 +1123,7 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # addition
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             (fp_a + fp_b).as_floating_point() ==
             (fp_sparse_a + fp_sparse_b).as_floating_point()))
 
@@ -1133,7 +1133,7 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # subtraction
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             (fp_a - fp_b).as_floating_point() ==
             (fp_sparse_a - fp_sparse_b).as_floating_point()))
 
@@ -1144,7 +1144,7 @@ class TestFixedPointArray(unittest.TestCase):
         fp_a, fp_b, fp_sparse_a, fp_sparse_b = self._get_sparse_arrays()
 
         # .dot()
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             (fp_a - fp_b).as_floating_point() ==
             (fp_sparse_a - fp_sparse_b).as_floating_point()))
 
@@ -1190,12 +1190,12 @@ class TestFixedPointArray(unittest.TestCase):
         sparse_fp_imag_a = sparse_fp_cmplx_a.imag
 
         self.assertTrue(isinstance(fp_imag_a, self.fp_class))
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             fp_imag_a.as_floating_point() ==
             fp_cmplx_a.as_floating_point().imag))
 
         self.assertTrue(isinstance(sparse_fp_imag_a, self.fp_class))
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             sparse_fp_imag_a.as_floating_point() ==
             fp_cmplx_a.as_floating_point().imag))
 
@@ -1211,12 +1211,12 @@ class TestFixedPointArray(unittest.TestCase):
         sparse_fp_real_a = sparse_fp_cmplx_a.real
 
         self.assertTrue(isinstance(fp_real_a, self.fp_class))
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             fp_real_a.as_floating_point() ==
             fp_cmplx_a.as_floating_point().real))
 
         self.assertTrue(isinstance(sparse_fp_real_a, self.fp_class))
-        self.assertTrue(np.alltrue(
+        self.assertTrue(np.all(
             sparse_fp_real_a.as_floating_point() ==
             fp_cmplx_a.as_floating_point().real))
 
@@ -1351,7 +1351,7 @@ class TestFixedPointArray(unittest.TestCase):
 
         fp_cmplx_a_copy = fp_cmplx_a.copy()
 
-        self.assertTrue(np.alltrue(fp_cmplx_a == fp_cmplx_a_copy))
+        self.assertTrue(np.all(fp_cmplx_a == fp_cmplx_a_copy))
 
         self.assertIsNot(fp_cmplx_a, fp_cmplx_a_copy)
         self.assertIsNot(fp_cmplx_a.data, fp_cmplx_a_copy.data)
